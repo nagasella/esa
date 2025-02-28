@@ -1,0 +1,79 @@
+/**
+ * @file esa.h
+ * @author nagasella
+ * @brief An Entity System for GBA games.
+ * @version 0.1
+ * @date 2025-02-23
+ * 
+ * @copyright Copyright (c) 2025
+ * 
+ */
+
+#ifndef ESA_H
+#define ESA_H
+
+using u32 = unsigned int;
+
+/**
+ * @brief ESA namespace.
+ * 
+ */
+namespace esa
+{
+
+    /**
+     * @brief Indicates that no entity was found. May be returned by some ESA functions.
+     * 
+     */
+    const u32 enull  = 0xffffffff;
+
+
+    /**
+     * @brief Null entity model.
+     * 
+     */
+    const u32 etnull = 0xffffffff;
+
+
+    /**
+     * @brief The main ESA data structure. It allows to organize entities (game objects)
+     * into a table, where each row is the unique ID of an entity, and each column is a field (a variable for the Entity).
+     * The template must be parametrized in order to optimize its size in memory.
+     * 
+     * @tparam Entities The maximum number of entities (game objects) this `entity_table` can store.
+     * @tparam Models The maximum number of entity models (types) this `entity_table` can store.
+     * @tparam Fixed The maximum number of fields of type `bn::fixed` this `entity_table` can store for each entity.
+     * @tparam Ints The maximum number of fields of type `int` this `entity_table` can store for each entity.
+     * @tparam EntityUpdaters The maximum number of `entity_updater` objects for this `entity_table`.
+     * @tparam TableUpdaters The maximum number of `table_updater` objects for this `entity_table`.
+     */
+    template<u32 Entities, u32 Models, u32 Fixed, u32 Ints, u32 EntityUpdaters, u32 TableUpdaters>
+    class entity_table;
+
+
+    /**
+     * @brief A `table_updater` is an updater that works on an `entity_table`, but does not process specific entities.
+     * Also, it has to be parametrized with its associated `entity_table`
+     * 
+     * @tparam Table The type of `entity_table` this `entity_updater` works on.
+     */
+    template<typename Table>
+    class table_updater;
+
+
+    /**
+     * @brief An `entity_updater` is an updater that can process entities possessing specific fields.
+     * 
+     * @tparam Table The type of `entity_table` this `entity_updater` works on.
+     */
+    template<typename Table>
+    class entity_updater;
+
+
+}
+
+#include "esa_arrays.h"
+#include "esa_table.h"
+#include "esa_updaters.h"
+
+#endif

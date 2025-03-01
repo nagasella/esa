@@ -1,4 +1,5 @@
 #include "bn_core.h"
+#include "bn_display.h"
 #include "esa.h"
 #include "bn_sprite_items_squares.h"
 
@@ -56,25 +57,25 @@ class u_movement : public entity_updater
         y += vy;
 
         // Bounce off screen edges
-        if (x < -120)
+        if (x < -bn::display::width() / 2)
         {
-            x = -120;
+            x = -bn::display::width() / 2;
             vx *= -1;
         }
-        else if (x > 120)
+        else if (x > bn::display::width() / 2)
         {
-            x = 120;
+            x = bn::display::width() / 2;
             vx *= -1;
         }
         
-        if (y < -80)
+        if (y < -bn::display::height() / 2)
         {
-            y = -80;
+            y = -bn::display::height() / 2;
             vy *= -1;
         }
-        else if (y > 80)
+        else if (y > bn::display::height() / 2)
         {
-            y = 80;
+            y = bn::display::height() / 2;
             vy *= -1;
         }
 
@@ -101,10 +102,19 @@ int main()
     // Initialize all the updaters
     table.init();
 
-    // Define the Model for the Entity
+    // Add an entity to the table 
+    // Deinfe its Model at the same time
     u32 e = table.create<SQUARE>();
     table.fixed.add<SQUARE, VX>(e, 0.5);
     table.fixed.add<SQUARE, VY>(e, 0.5);
+    table.sprites.set(e, bn::sprite_items::squares.create_sprite(0, 0));
+    table.subscribe(e);
+
+    // Add another entity to the table
+    // The model (fields possessed by the entity) is identical to the above
+    e = table.create<SQUARE>();
+    table.fixed.add<SQUARE, VX>(e, -0.5);
+    table.fixed.add<SQUARE, VY>(e, -0.5);
     table.sprites.set(e, bn::sprite_items::squares.create_sprite(0, 0));
     table.subscribe(e);
 

@@ -1,6 +1,6 @@
 # ESA (Entity System Advance)
 
-ESA (Entity System Advance) is an Entity System for Game Boy Adance (GBA) game development. It is conceived to be used together with the [Butano](https://github.com/GValiente/butano?tab=readme-ov-file) game engine.
+ESA (Entity System Advance) is an Entity System for Game Boy Adance (GBA) game development, written in C++. It was conceived to be used together with the [Butano](https://github.com/GValiente/butano?tab=readme-ov-file) game engine, and it was designed to be first and foremost fun and easy to use.
 
 ## An introduction to Entity Systems
 
@@ -10,7 +10,7 @@ The TL;RD version would be that an Entity System organizes the game logic in a w
 
 ## ESA's basics
 
-ESA is a compact, header-only framework (the main reason for this is that it extensively relies on C++ templates). ESA does not exactly use the typical naming convention of Entity Systems; however, the basic idea remains the same. Here are the main building blocks of ESA:
+ESA is a compact, header-only framework (the main reason for this is that it extensively relies on C++ templates). Its main building blocks are the following:
 * The _Entity table_ is the main data structure of ESA: it essentially represents a collection of game objects
 * _Entities_ are IDs that identify game objects in a unique way; they are the _row index_ of the entity table
 * _Fields_ are the _columns_ of the table, and they represent individual variables that each entity can possess (or not)

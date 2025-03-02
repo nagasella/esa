@@ -26,7 +26,7 @@ namespace cs
 
             // enum
             SCALE = 0, 
-            SCALE_SZ = 2, // (size in bits)
+            SCALE_SZ = 2, // (size of the field in bits)
 
             // bool
             VISIBLE = 0

@@ -1,7 +1,7 @@
 #include "cs_u_rotation.h"
 
 cs::u_rotation::u_rotation(entity_table& t) :
-    entity_updater::entity_updater(t, tags::MOVEMENT)
+    entity_updater::entity_updater(t, tags::ROTATION)
 {
     
 }

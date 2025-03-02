@@ -1,9 +1,6 @@
 /**
  * @file esa.h
  * @author nagasella
- * @brief An Entity System for GBA games.
- * @version 0.1
- * @date 2025-02-23
  * 
  * @copyright Copyright (c) 2025
  * 
@@ -22,7 +19,7 @@ namespace esa
 {
 
     /**
-     * @brief Indicates that no entity was found. May be returned by some ESA functions.
+     * @brief Indicates that no entity was found.
      * 
      */
     const u32 enull  = 0xffffffff;
@@ -53,7 +50,7 @@ namespace esa
 
     /**
      * @brief A `table_updater` is an updater that works on an `entity_table`, but does not process specific entities.
-     * Also, it has to be parametrized with its associated `entity_table`
+     * It has to be parametrized with its associated `entity_table`
      * 
      * @tparam Table The type of `entity_table` this `entity_updater` works on.
      */
@@ -62,7 +59,7 @@ namespace esa
 
 
     /**
-     * @brief An `entity_updater` is an updater that can process entities possessing specific fields.
+     * @brief An `entity_updater` is an updater that can process entities that possess specific fields.
      * 
      * @tparam Table The type of `entity_table` this `entity_updater` works on.
      */

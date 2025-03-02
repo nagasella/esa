@@ -217,6 +217,10 @@ Or, for table updaters:
 my_updater * updater = (my_updater *) table.get_table_updater<TAG>();
 ```
 
+## Update order
+
+When calling ```table.update()```, the order in which updaters are processed is: first, all the entity updaters are processed, in order of insertion; then, all table updaters are processed, in order of insertion.
+
 ## Queries
 
 Queries can be defined in order to retrieve entities that satisfy a certain condition. Queries are defined as `bool` functions, and they take as paramters the `entity_table` on which they will work, as well as an entity ID. The query function is applied per-entity, and it should return `true` if the entity satisfies the query criteria, otherwise `false`. Here is an example of a query form the `colored-squares` example project, which finds all entities of `RED_SQUARE` type:
@@ -236,7 +240,7 @@ Then, the function can be used to query a table, generally from whithin some upd
 bn::vector<u32, 128> red_squares = table.query<128>(&cs::queries::find_red_squares);
 ```
 
-The query returns a `bn::vector` with the IDs of the entities that satisfy the query condition. The size of the `bn::vector` may not always be known at compile time, so it is important to be careful with this: in any case, the query execution will end once the iteration on the table is over, or once the vector is full.
+The query returns a `bn::vector` with the IDs of the entities that satisfy the query condition. The size of the `bn::vector` may not always be known at compile time, so it is important to be careful with this.
 
 Sometimes, it is necessary to pass some parameter to the query in order to have a _dynamic_ kind of filtering, and this can be done by implementing those parameters into a `struct` or a `class`, which can then be passed to the query function. An example of this is also shown in the `colored-squares` example project.
 

@@ -14,7 +14,7 @@
 #define MOVEMENT 0
 
 // Parametrization of an entity table and its updaters
-using entity_table = esa::entity_table<8, 1, 2, 1, 1, 1>;
+using entity_table = esa::entity_table<2, 1, 2, 1, 1, 1>;
 using entity_updater = esa::entity_updater<entity_table>;
 using table_updater = esa::table_updater<entity_table>;
 

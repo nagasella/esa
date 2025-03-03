@@ -25,8 +25,12 @@ namespace esa
 
         static_assert(Entities <= 256, "ESA ERROR: table cannot have more than 256 entities!");
         static_assert(Models   <= 32, "ESA ERROR: table cannot have more than 32 models!");
-        static_assert(Fixed    <= 32, "ESA ERROR: table cannot have more than 32 bn::fixed Fields!");
-        static_assert(Ints     <= 32, "ESA ERROR: table cannot have more than 32 int Fields!");
+        static_assert(Fixed    <= 32, "ESA ERROR: table cannot have more than 32 bn::fixed fields!");
+        static_assert(Ints     <= 32, "ESA ERROR: table cannot have more than 32 int fields!");
+        static_assert(Entities > 0, "ESA ERROR: table must have at least 1 entity!");
+        static_assert(Models   > 0, "ESA ERROR: table must have at least 1 model!");
+        static_assert(Fixed    > 0, "ESA ERROR: table must have at least 1 bn::fixed field!");
+        static_assert(Ints     > 0, "ESA ERROR: table must have at least 1 int field!");
         
         u32 _size;
         u32 _used;

@@ -46,6 +46,8 @@ The following is a practical example of usage of ESA (find the source code in th
 // Updaters tags
 #define MOVEMENT 0
 
+using u32 = esa::u32;
+
 // Parametrization of an entity table and its updaters
 using entity_table = esa::entity_table<2, 1, 2, 1, 1, 1>;
 using entity_updater = esa::entity_updater<entity_table>;
@@ -161,7 +163,7 @@ int main()
 }
 ```
 
-The type `u32` is an ESA type, alias for `unsigned int`.
+The type `esa::u32` is an ESA type, alias for `unsigned int`.
 
 ## More about entity tables
 

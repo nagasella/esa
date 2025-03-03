@@ -9,14 +9,14 @@
 #ifndef ESA_H
 #define ESA_H
 
-using u32 = unsigned int;
-
 /**
  * @brief ESA namespace.
  * 
  */
 namespace esa
 {
+
+    using u32 = unsigned int;
 
     /**
      * @brief Indicates that no entity was found.

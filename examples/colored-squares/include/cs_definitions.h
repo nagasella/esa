@@ -5,6 +5,8 @@
 
 namespace cs
 {
+    using u32 = esa::u32;
+
     // Parametrization of an entity table and its updaters
     using entity_table   = esa::entity_table<128, 4, 4, 4, 8, 2>;
     using entity_updater = esa::entity_updater<entity_table>;

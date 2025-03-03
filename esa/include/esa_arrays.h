@@ -28,8 +28,8 @@ namespace esa
     template<typename T, u32 Entities, u32 Models, u32 Size>
     class field_array
     {
-        u32 _models [Models];
-        T   _fields [Entities * Size];
+        u32 _models [Size == 0 ? 1 : Models];
+        T   _fields [Size == 0 ? 1 : Entities * Size];
 
         public:
 

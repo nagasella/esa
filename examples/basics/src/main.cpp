@@ -16,7 +16,7 @@
 using u32 = esa::u32;
 
 // Parametrization of an entity table and its updaters
-using entity_table = esa::entity_table<2, 1, 2, 1, 1, 1>;
+using entity_table = esa::entity_table<2, 1, 2, 0, 1, 1>;
 using entity_updater = esa::entity_updater<entity_table>;
 using table_updater = esa::table_updater<entity_table>;
 

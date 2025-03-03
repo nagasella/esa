@@ -29,8 +29,6 @@ namespace esa
         static_assert(Ints     <= 32, "ESA ERROR: table cannot have more than 32 int fields!");
         static_assert(Entities > 0, "ESA ERROR: table must have at least 1 entity!");
         static_assert(Models   > 0, "ESA ERROR: table must have at least 1 model!");
-        static_assert(Fixed    > 0, "ESA ERROR: table must have at least 1 bn::fixed field!");
-        static_assert(Ints     > 0, "ESA ERROR: table must have at least 1 int field!");
         static_assert(EntityUpdaters > 0, "ESA ERROR: table must have at least 1 entity updater!");
         static_assert(TableUpdaters > 0, "ESA ERROR: table must have at least 1 table updater!");
         

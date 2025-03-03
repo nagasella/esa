@@ -28,31 +28,26 @@ namespace esa
     template<typename T, u32 Entities, u32 Models, u32 Size>
     class field_array
     {
-        u32 _models [ Size == 0 ? 1 : Models ];
-        T   _fields [ Size == 0 ? 1 : Entities * Size ];
+        u32 _models [Models];
+        T   _fields [Entities * Size];
 
         public:
 
         /**
-         * @brief Assign a value to a field of a certain entity, while at the
-         * same time building a corresponding entity model.
+         * @brief Mark and entity model as possessing a specific field.
          * 
-         * @tparam Model The model of the entity.
-         * @tparam Field The ID of the field.
-         * @param e The ID of the entity.
-         * @param value The value to assign to the field.
+         * @tparam Model The entity model
+         * @tparam Field The field to assign
          */
         template<u32 Model, u32 Field>
-        void add(u32 e, T value)
+        void add()
         {
             BN_ASSERT(Field < Size, "ESA ERROR: maximum number of fields exceeeded!");
             *(_models + Model) |= (1 << Field);
-            *(_fields + Size * e + Field) = value;
         }
 
         /**
-         * @brief Assign a value to a field of a certain entity. This function will not 
-         * modify the entity model.
+         * @brief Assign a value to a field of a certain entity.
          * 
          * @tparam Field The ID of the field.
          * @param e The ID of the entity.
@@ -107,8 +102,7 @@ namespace esa
         public:
 
         /**
-         * @brief Assign a value to a field of a certain entity, while at the
-         * same time building a corresponding entity model.
+         * @brief Mark and entity model as possessing a specific `bool` field.
          * 
          * @tparam Model The model of the entity.
          * @tparam Field The ID of the field.
@@ -116,19 +110,14 @@ namespace esa
          * @param value The value to assign to the field.
          */
         template<u32 Model, u32 Field>
-        void add(u32 e, bool value)
+        void add()
         {
             BN_ASSERT(Field < 32, "ESA ERROR: maximum number of bool fields exceeded!");
             *(_models + Model) |= (1 << Field);
-            if (value)
-                *(_fields + e) |= 1 << Field;
-            else
-                *(_fields + e) &= ~(1 << Field);
         }
 
         /**
-         * @brief Assign a value to a field of a certain entity. This function will not 
-         * modify the entity model.
+         * @brief Assign a value to a field of a certain entity.
          * 
          * @tparam Field The ID of the field.
          * @param e The ID of the entity.
@@ -188,26 +177,21 @@ namespace esa
         public:
 
         /**
-         * @brief Assign a value to a field of a certain entity, while at the
-         * same time building a corresponding entity model.
+         * @brief Mark and entity model as possessing a specific `enum` field.
          * 
          * @tparam Model The model of the entity.
          * @tparam Field The field to assign.
          * @tparam Size The size (in bits) of the enum field.
-         * @param e The entity to assign the fields's value to.
-         * @param value The value to assign to the field.
          */
         template<u32 Model, u32 Field, u32 Size>
-        void add(u32 e, u32 value)
+        void add()
         {
             BN_ASSERT(Field + Size < 32, "ESA ERROR: maximum number of enum fields bits exceeded!");
             *(_models + Model) |= (((1 << Size) - 1) << Field);
-            *(_fields + e) &= ~(((1 << Size) - 1) << Field);
-            *(_fields + e) |= (value << Field);
         }
 
         /**
-         * @brief Assign a value to a Field of a certain Entity.
+         * @brief Assign a value to a field of a certain entity.
          * 
          * @tparam Field The ID of the field.
          * @tparam Size The size (in bits) of the field.
@@ -341,7 +325,7 @@ namespace esa
         
         void clear(u32 e)
         {
-            *(_models + e) = etnull;
+            *(_models + e) = EM_NULL;
         }
 
     };

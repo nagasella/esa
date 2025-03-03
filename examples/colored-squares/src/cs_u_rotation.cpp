@@ -8,7 +8,7 @@ cs::u_rotation::u_rotation(entity_table& t) :
 
 void cs::u_rotation::require()
 {
-    // This updater will process only entities that have a VISIBLE int field
+    // This updater will process only entities that have an ANGLE int field
     require_int<fields::ANGLE>();
 }
 
@@ -23,12 +23,12 @@ void cs::u_rotation::update(u32 e)
     int angle = table.intgs.get<fields::ANGLE>(e);
 
     // modify the fields
-    angle += 1;
+    angle++;
 
     if (angle == 360)
         angle = 0;
     
-    // apply to sprite
+    // apply rotation to sprite
     if (table.sprites.has(e))
         table.sprites.get(e).set_rotation_angle(angle);
 

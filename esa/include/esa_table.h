@@ -31,6 +31,8 @@ namespace esa
         static_assert(Models   > 0, "ESA ERROR: table must have at least 1 model!");
         static_assert(Fixed    > 0, "ESA ERROR: table must have at least 1 bn::fixed field!");
         static_assert(Ints     > 0, "ESA ERROR: table must have at least 1 int field!");
+        static_assert(EntityUpdaters > 0, "ESA ERROR: table must have at least 1 entity updater!");
+        static_assert(TableUpdaters > 0, "ESA ERROR: table must have at least 1 table updater!");
         
         u32 _size;
         u32 _used;
@@ -38,9 +40,8 @@ namespace esa
         u32 _mmask;
         u32 _emask [ (Entities - 1) / 32 + 1 ];
 
-        bn::vector<entity_updater<entity_table<Entities, Models, Fixed, Ints, EntityUpdaters, TableUpdaters>> *, TableUpdaters> _entity_updaters;
-        bn::vector<table_updater<entity_table<Entities, Models, Fixed, Ints, EntityUpdaters, TableUpdaters>> *, EntityUpdaters> _table_updaters;
-
+        bn::vector<entity_updater<entity_table<Entities, Models, Fixed, Ints, EntityUpdaters, TableUpdaters>> *, EntityUpdaters> _entity_updaters;
+        bn::vector<table_updater<entity_table<Entities, Models, Fixed, Ints, EntityUpdaters, TableUpdaters>> *, TableUpdaters> _table_updaters;
 
         public:
 
@@ -122,10 +123,11 @@ namespace esa
                     if (e == _used)
                         _used++;
                     models.template add<Model>(e);
+                    subscribe(e);
                     return e;
                 }
             }
-            return enull;
+            return E_NULL;
         }
 
 

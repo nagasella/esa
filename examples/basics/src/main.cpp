@@ -18,7 +18,7 @@ using entity_table = esa::entity_table<2, 1, 2, 1, 1, 1>;
 using entity_updater = esa::entity_updater<entity_table>;
 using table_updater = esa::table_updater<entity_table>;
 
-// Updater that processes movement of entities
+// This updater changes the x, y coordinates of entities based on their velocity
 class u_movement : public entity_updater
 {
 
@@ -96,27 +96,27 @@ int main()
     // Define an entity table
     entity_table table;
 
-    // Set up all the updaters for the table
+    // Define an entity model
+    table.fixed.add<SQUARE, VX>();
+    table.fixed.add<SQUARE, VY>();
+
+    // Set an updater
     table.add_updater(new u_movement(table));
 
     // Initialize all the updaters
     table.init();
 
-    // Add an entity to the table 
-    // Deinfe its Model at the same time
+    // Add an entity to the table, according to a previously defined model
     u32 e = table.create<SQUARE>();
-    table.fixed.add<SQUARE, VX>(e, 0.5);
-    table.fixed.add<SQUARE, VY>(e, 0.5);
+    table.fixed.set<VX>(e, 0.5);
+    table.fixed.set<VY>(e, 0.5);
     table.sprites.set(e, bn::sprite_items::squares.create_sprite(0, 0));
-    table.subscribe(e);
 
     // Add another entity to the table
-    // The model (fields possessed by the entity) is identical to the above
     e = table.create<SQUARE>();
-    table.fixed.add<SQUARE, VX>(e, -0.5);
-    table.fixed.add<SQUARE, VY>(e, -0.5);
+    table.fixed.set<VX>(e, -0.5);
+    table.fixed.set<VY>(e, -0.5);
     table.sprites.set(e, bn::sprite_items::squares.create_sprite(0, 0));
-    table.subscribe(e);
 
     while (true)
     {

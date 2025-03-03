@@ -6,7 +6,7 @@
 namespace cs
 {
     // Parametrization of an entity table and its updaters
-    using entity_table   = esa::entity_table<128, 3, 4, 4, 4, 4>;
+    using entity_table   = esa::entity_table<128, 4, 4, 4, 8, 2>;
     using entity_updater = esa::entity_updater<entity_table>;
     using table_updater  = esa::table_updater<entity_table>;
 
@@ -18,15 +18,23 @@ namespace cs
             // bn::fixed
             X = 0,
             Y = 1,
-            VX = 2, 
+            VX = 2,
             VY = 3,
 
             // int
-            ANGLE = 0, 
+            ANGLE = 0,
 
             // enum
-            SCALE = 0, 
-            SCALE_SZ = 2, // (size of the field in bits)
+            SCALE = 0, // left bit-shift
+            SCALE_SZ = 2, // size of the field in bits
+            ANIM_CURR = 2,
+            ANIM_CURR_SZ = 2,
+            ANIM_FIRST = 4,
+            ANIM_FIRST_SZ = 2,
+            ANIM_LAST = 6,
+            ANIM_LAST_SZ = 2,
+            ANIM_TIMER = 8,
+            ANIM_TIMER_SZ = 4,
 
             // bool
             VISIBLE = 0
@@ -40,7 +48,8 @@ namespace cs
         {
             RED_SQUARE = 0,
             BLUE_SQUARE = 1,
-            YELLOW_SQUARE = 2
+            YELLOW_SQUARE = 2,
+            FLASHING_SQUARE = 3
         };
     }
 
@@ -53,7 +62,8 @@ namespace cs
             ROTATION = 1,
             SCALING = 2,
             VISIBILITY = 3,
-            ENTITY_MANAGER = 4
+            ENTITY_MANAGER = 4,
+            ANIMATION = 5
         };
     }
     

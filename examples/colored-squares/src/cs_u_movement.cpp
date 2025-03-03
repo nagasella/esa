@@ -8,7 +8,7 @@ cs::u_movement::u_movement(entity_table& t) :
 
 void cs::u_movement::require()
 {
-    // This updater will process only entities that have X, Y VX and VY bn::fixed fields
+    // This updater will process only entities that have X, Y VX and VY fields
     require_fixed<fields::X>();
     require_fixed<fields::Y>();
     require_fixed<fields::VX>();

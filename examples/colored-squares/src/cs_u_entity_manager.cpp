@@ -25,11 +25,12 @@ void cs::u_entity_manager::update()
         entities::red_square(table);
         entities::blue_square(table);
         entities::yellow_square(table);
+        entities::flashing_square(table);
     }
     // increase the velocity of the blue squares on screen
     else if (bn::keypad::right_pressed())
     {
-        // apply a function to entites in the table
+        // apply a function to the table
         table.apply(&queries::incr_blue_squares_velocity);
     }
     // delete all the squares
@@ -67,6 +68,7 @@ void cs::u_entity_manager::update()
     // Destroy the first blue square found in the table
     else if (bn::keypad::l_pressed())
     {
+        // apply a function to the table
         table.apply(&queries::destroy_first_blue_square);
     }
 }

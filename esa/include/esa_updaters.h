@@ -93,7 +93,7 @@ namespace esa
 
         u32 _tag;
 
-        u32 _emodel;
+        u32 _mmask;
         u32 _fmask;
         u32 _imask;
         u32 _bmask;
@@ -103,7 +103,7 @@ namespace esa
 
 
         /**
-         * @brief Tells if an entity can be subscribed to this updater, based on its model.
+         * @brief Tells if an entity can be subscribed to this updater.
          * 
          * @param e The ID of the entity to check.
          * @return true 
@@ -111,8 +111,8 @@ namespace esa
          */
         bool subscribable(u32 e)
         {
-            u32 model = table.models.get(e);
-            bool mmatch  = (_emodel == etnull || model == _emodel);            
+            u32 model    = table.models.get(e);
+            bool mmatch  = (_mmask == EM_NULL || _mmask == model);            
             bool fmatch  = table.fixed.matching(model, _fmask);
             bool imatch  = table.intgs.matching(model, _imask);
             bool bmatch  = table.bools.matching(model, _bmask);
@@ -143,7 +143,7 @@ namespace esa
         entity_updater(Table& t, u32 tag) 
             : table(t), _tag(tag)
         {
-            _emodel = etnull;
+            _mmask  = EM_NULL;
             _fmask  = 0;
             _imask  = 0;
             _bmask  = 0;
@@ -257,7 +257,7 @@ namespace esa
         template<u32 Model>
         void require_model()
         {
-            _emodel = Model;
+            _mmask = Model;
         }
 
 

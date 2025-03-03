@@ -25,7 +25,7 @@ void cs::u_scaling::update(u32 e)
     // read the fields
     u32 scale = table.enums.get<fields::SCALE, fields::SCALE_SZ>(e);
 
-    // modify the fields
+    // modify the scale
     if (bn::keypad::a_pressed())
     {
         if (scale < 3)

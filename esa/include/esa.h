@@ -22,14 +22,14 @@ namespace esa
      * @brief Indicates that no entity was found.
      * 
      */
-    const u32 enull  = 0xffffffff;
+    const u32 E_NULL  = 0xffffffff;
 
 
     /**
      * @brief Null entity model.
      * 
      */
-    const u32 etnull = 0xffffffff;
+    const u32 EM_NULL = 0xffffffff;
 
 
     /**

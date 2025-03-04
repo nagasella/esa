@@ -13,10 +13,10 @@ The TL;DR version would be that an Entity System organizes the game logic in a w
 ESA is a compact, header-only framework (the main reason for this is that it extensively relies on C++ templates). Its main building blocks are the following:
 * The _Entity table_ is the main data structure of ESA: it essentially represents a collection of game objects, organized in tabular format
 * _Entities_ are IDs that identify game objects in a unique way; they are the _row index_ of the entity table
-* _Fields_ are the _column indices_ of the table, and they represent individual variables that each entity can possess (or not)
-* _Entity Models_ are essentially the _types_ of the entities; they define which fields a certain type of entity possesses, and which not
+* _Fields_ are the _column indices_ of the table, and they represent individual variables that each entity can own (or not)
+* _Entity Models_ are essentially the _types_ of the entities; they define which fields a certain type of entity owns, and which not
 * _Updaters_ are objects that work on tables and update their content. There are two types of updaters: 
-    * _Entity Updaters_, which work on subsets of entities based on their fields or model
+    * _Entity Updaters_, which work on subsets of entities in a table based on their fields or model
     * _Table Updaters_, which do not necessarily process specific entities, but they can access a table's content freely
 * _Queries_ can be performed in order to filter a table - that is, look for specific entities based on a condition. Also, entity tables support _Apply_ operations, which consist in applying a function iteratively on the whole table (this can allow to modify all entities that satisfy a certain condition)
 
@@ -165,80 +165,6 @@ int main()
 
 The type `esa::u32` is an ESA type, alias for `unsigned int`.
 
-## More about entity tables
-
-Entity tables are the main data structure of ESA. A snapshot of an entity table at a certain time could look something like this:
-
-<table>
-    <tr>
-        <td></td>
-        <td>VX</td>
-        <td>VY</td>
-        <td>GRAVITY</td>
-        <td>TIMER</td>
-        <td>ANIMATED</td>
-        <td>ALIVE</td>
-        <td>HEALTH</td>
-        <td>ITEM_ID</td>
-    </tr>
-    <tr>
-        <td>E1</td>
-        <td>0.5</td>
-        <td>2.0</td>
-        <td>0.2</td>
-        <td>0</td>
-        <td>true</td>
-        <td>true</td>
-        <td>3</td>
-        <td></td>
-    </tr>
-    <tr>
-        <td>E2</td>
-        <td></td>
-        <td></td>
-        <td></td>
-        <td></td>
-        <td>false</td>
-        <td></td>
-        <td></td>
-        <td>2</td>
-    </tr>
-    <tr>
-        <td>E3</td>
-        <td>-0.5</td>
-        <td></td>
-        <td></td>
-        <td>15</td>
-        <td>true</td>
-        <td>true</td>
-        <td>2</td>
-        <td></td>
-    </tr>
-    <tr>
-        <td>E4</td>
-        <td>0.2</td>
-        <td></td>
-        <td></td>
-        <td>5</td>
-        <td>true</td>
-        <td>true</td>
-        <td>2</td>
-        <td></td>
-    </tr>
-</table>
-
-In the table above, each row is a game object (entity), possessing certain fields. For example, the entity in the first row could be our main character, while the second row could be an item (has no velcity, no gravity applied, no health, it is not animated and has an item ID). The thrid and fourth rows could be enemies (they have no gravity, but they are moving in the x direction, have some health and are animated, plus they implement a general purpose timer). The entity table above implements 3 models: one player model, one item model, and one enemy model.
-
-The behaviors of these entities will be implemented through _entity updaters_, which will process all the entities that share a given set of fields. For example, given the table above, we could have: 
-* A _movement_ updater that just takes care of adding the VX and VY to the entity's position, moving the sprite on screen
-* A _gravity_ updater that keeps incrementing VY by the value of GRAVITY
-* A _timer_ updater that takes care of updating the TIMER in each entity
-* An _animation_ updater that will update the animation for each entity that is ANIMATED
-
-And so on. Then, as we add more and more entities to the table, they will automatically be processed by the relevant updaters. If we want to add some behavior to an entity, it will be enough to add the relevant fields to it, and it will be processed by the corresponding updater.
-
-From the picture above, it is clear that not all the entities possess all the fields: this actually implies that some memory is _wasted_, since those memory regions are not allocated. ESA compesates for this by implementing some types of fields in a memory-efficient way (see the next section). In any case, nothing prevents to allocate more than one entity table, and keep inside each table entities that share as many fields as possible; however, it is better to avoid to make entity tables that are _too specialized_, as this would completely defeat the purpose of the Entity System.
-
 ## More about fields
 
 ESA allows to define four different types of fields:
@@ -248,15 +174,9 @@ ESA allows to define four different types of fields:
 * `bool` fields
 * `enum` fields
 
-The first two types of fields in the above list are implemented as _arrays_ of `bn::fixed` and `int` variables. Every entity table must contain at least one `bn::fixed` and one `int` field. There is also a limit to how many fields of this type each table can have (i.e., there is a limit in the number of _columns_ of a Table): this is up to `32` `bn::fixed` Fields, up to `32` `int` Fields.
+Inside a table, the containers for fields of type `bn::fixed` and `int` are essentially arrays of the corresponding data type. The number of `bn::fixed` and `int` fields for a table are defined as part of its template parameters (in any case, this number must be <= 32). Instead, `bool` fields are implemented as individual bits inside a single `unsigned int` variable, and `enum`s as bitsets inside an `unsigned int`: therefore, a table can have up to 32 `bool` fields, and as many `enum` fields as you can fit in 32 bits.
 
-The other two types of field (`bool` and `enum`) have a different implementation, in order to optimize memory usage:
-* `bool` fields are implemented as a _individual bits_ inside a single `unsigned int` variable; for this reason, it is possible to have up to 32 `bool` fields per Entity Table
-* `enum` fields are implemented as _sets of 1 or more bits_ inside a single `unsigned int` variable. The number of fields of this type that can be stored in a Table depends on how many bits are taken up by each Field - but still up to 32 bits in total
-
-So, in summary, each entity can possess up to 32 `bn::fixed` fields, up to 32 `int` fields, up to 32 `bool` fields and as many `enum` fields as can be fit in 32 bits. Also, the maximum limit of entities in a table is 256. Overall, this should be quite enough for most scenarios.
-
-Fields are essentially indices, and they can be defined either through `#define` statements or thorugh C++ `enums` (see the ESA examples). Each type of field can have its own indexing from `0` to `31`. For example, we could have something like the following:
+Fields are essentially defined as indices, for example through `#define` statements or thorugh C++ `enums` (see the ESA examples). Each type of field can have its own indexing from `0` to `31`. For example, we could have something like the following:
 
 ```cpp
 // indices for fields of type bn::fixed
@@ -282,11 +202,23 @@ Fields are essentially indices, and they can be defined either through `#define`
 // ... up to 32 bits available
 ```
 
-These indices are then used when defining entity models, and also to access/modify the fields of each entity in the table.
+## More about entity tables
+
+In order to optimize memory storage, ESA allows to parameterize entity tables in terms of:
+* The number of entities
+* The number of entity models
+* The number of `bn::fixed` fields
+* The number of `int` fields
+* The number of entity updaters
+* The number of table updaters
+
+Since an entity table generally contains heterogeneous entities (that is, entities that do not share all the fields) some cells of the table may remain empty: this generates some memory waste. To compensate for this, keep in mind that:
+* `bool` and `enum` fields do not take much space: for both data types, there is only a single `unsigned int` variable per entity, therefore they are quite memory efficient (although the access time can be a bit slower)
+* It is always possible to define more than 1 entity table, and group in the same table those entities that share many fields; however, this shouldn't be taken too far, since one of the main benefits of an Entity System is its flexibility in terms handling heterogeneous game objects
 
 ## More about entity models
 
-An entity model represents the _type_ of an entity: it is associated to the fields the entitiy possesses. When instantiating an `entity_table`, it is necessary to specify in its template parameters how many models the table supports. Each table has to support at least one model, but also not more than 32 models per table are supported for now.
+An entity model represents the _type_ of an entity: it is associated to the fields the entitiy owns. When instantiating an `entity_table`, it is necessary to specify in its template parameters how many models the table supports. Each table has to support at least one model, but also not more than 32 models per table are supported for now.
 
 It is necessary to define all the entity models for the table before starting to add entities to it. This essentially means defining which fields the specific model contains. It can be done as shown in the example above:
 
@@ -298,7 +230,7 @@ table.fixed.add<SQUARE, VY>();
 Similarly for `int`, `bool` and `enum` fields. For `enum` fields, it is necessary to specify two indices, one for the field (which corresponds to its _left bit-shift_) and one for its size (in bits):
 
 ```cpp
-table.enums.add<MODEL, FIELD_LEFTSHIFT, FIELD_SIZE>();
+table.enums.add<MODEL, FIELD_ID, FIELD_SIZE>();
 ```
 
 ## Creating and deleting entities

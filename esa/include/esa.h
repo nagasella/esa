@@ -37,10 +37,10 @@ namespace esa
      * into a table, where each row is the unique ID of an entity, and each column is a field (a variable for the Entity).
      * The template must be parametrized in order to optimize its size in memory.
      * 
-     * @tparam Entities The maximum number of entities (game objects) this `entity_table` can store.
-     * @tparam Models The maximum number of entity models (types) this `entity_table` can store.
-     * @tparam Fixed The maximum number of fields of type `bn::fixed` this `entity_table` can store for each entity.
-     * @tparam Ints The maximum number of fields of type `int` this `entity_table` can store for each entity.
+     * @tparam Entities The maximum number of entities (game objects) this `entity_table` can store (must be > 1 and <= 256).
+     * @tparam Models The maximum number of entity models (types) this `entity_table` can store (must be > 1 and <= 32).
+     * @tparam Fixed The maximum number of fields of type `bn::fixed` this `entity_table` can store for each entity (must be < 32).
+     * @tparam Ints The maximum number of fields of type `int` this `entity_table` can store for each entity (must be < 32).
      * @tparam EntityUpdaters The maximum number of `entity_updater` objects for this `entity_table`.
      * @tparam TableUpdaters The maximum number of `table_updater` objects for this `entity_table`.
      */

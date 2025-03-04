@@ -413,6 +413,19 @@ namespace esa
             }
         }
 
+
+        /**
+         * @brief Destructor.
+         * 
+         */
+        ~entity_table()
+        {
+            for (u32 i = 0; i < _entity_updaters.size(); i++)
+                delete _entity_updaters[i];
+            for (u32 i = 0; i < _table_updaters.size(); i++)
+                delete _table_updaters[i];
+        }
+
     };
 
 }

@@ -1,6 +1,5 @@
 #include "bn_core.h"
 #include "bn_keypad.h"
-#include "bn_profiler.h"
 
 #include "esa.h"
 
@@ -75,23 +74,9 @@ int main()
 
     while (true)
     {
-        if (bn::keypad::start_pressed())
-            profiling = true;
-
         // Update everything
-        BN_PROFILER_START("table.update()");
         table.update();
-        BN_PROFILER_STOP();
-
-        BN_PROFILER_START("bn::core::update()");
         bn::core::update();
-        BN_PROFILER_STOP();
-
-        if (profiling)
-        {
-            bn::profiler::show();
-            break;
-        }
     }
 
 }

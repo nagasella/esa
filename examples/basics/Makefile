@@ -5,10 +5,13 @@
 # PYTHON is the path to the python interpreter.
 # SOURCES is a list of directories containing source code.
 # INCLUDES is a list of directories containing extra header files.
-# DATA is a list of directories containing binary data.
+# DATA is a list of directories containing binary data files with *.bin extension.
 # GRAPHICS is a list of files and directories containing files to be processed by grit.
-# AUDIO is a list of files and directories containing files to be processed by mmutil.
-# DMGAUDIO is a list of files and directories containing files to be processed by mod2gbt and s3m2gbt.
+# AUDIO is a list of files and directories containing files to be processed by the audio backend.
+# AUDIOBACKEND specifies the backend used for audio playback. Supported backends: maxmod, aas, null.
+# AUDIOTOOL is the path to the tool used process the audio files.
+# DMGAUDIO is a list of files and directories containing files to be processed by the DMG audio backend.
+# DMGAUDIOBACKEND specifies the backend used for DMG audio playback. Supported backends: default, null.
 # ROMTITLE is a uppercase ASCII, max 12 characters text string containing the output ROM title.
 # ROMCODE is a uppercase ASCII, max 4 characters text string containing the output ROM code.
 # USERFLAGS is a list of additional compiler flags:
@@ -37,8 +40,11 @@ INCLUDES    	:=  include ../../esa/include
 DATA        	:=
 GRAPHICS    	:=  graphics
 AUDIO       	:=  audio
+AUDIOBACKEND	:=  maxmod
+AUDIOTOOL		:=  
 DMGAUDIO    	:=  dmg_audio
-ROMTITLE    	:=  ESA_BASICS
+DMGAUDIOBACKEND	:=  default
+ROMTITLE    	:=  ESA BASICS
 ROMCODE     	:=  SBTP
 USERFLAGS   	:=  
 USERCXXFLAGS	:=  

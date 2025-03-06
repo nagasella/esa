@@ -288,7 +288,7 @@ namespace esa
         {
             if (subscribable(e))
             {
-                *(_emask + e / 32) |= (1 << (e % 32));
+                *(_emask + (e >> 5)) |= (1 << (e & 31));
             }
         }
 
@@ -301,7 +301,7 @@ namespace esa
          */
         void unsubscribe(u32 e)
         {
-            *(_emask + e / 32) &= ~(1 << (e % 32));
+            *(_emask + (e >> 5)) &= ~(1 << (e & 31));
         }
 
 
@@ -314,7 +314,7 @@ namespace esa
          */
         bool subscribed(u32 e)
         {
-            return (( *(_emask + e / 32) >> (e % 32)) & 1) == 1; 
+            return (( *(_emask + (e >> 5)) >> (e & 31)) & 1) == 1; 
         }
 
 

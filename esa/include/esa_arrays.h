@@ -40,7 +40,7 @@ namespace esa
          * @tparam Field The field to assign
          */
         template<u32 Model, u32 Field>
-        void add()
+        inline void add()
         {
             BN_ASSERT(Field < Size, "ESA ERROR: maximum number of fields exceeeded!");
             *(_models + Model) |= (1 << Field);
@@ -54,7 +54,7 @@ namespace esa
          * @param value The value to assign to the field.
          */
         template<u32 Field>
-        void set(u32 e, T value)
+        inline void set(u32 e, T value)
         {
             *(_fields + e * Size + Field) = value;
         }
@@ -67,18 +67,18 @@ namespace esa
          * @return T The value of the field for the entity.
          */
         template<u32 Field>
-        T get(u32 e)
+        inline T get(u32 e)
         {
             return *(_fields + e * Size + Field);
         }
         
-        void clear(u32 e)
+        inline void clear(u32 e)
         {
             for (u32 f = 0; f < Size; f++)
                 *(_fields + e * Size + f) = 0;
         }
 
-        bool matching(u32 model, u32 mask)
+        inline bool matching(u32 model, u32 mask)
         {
             return (_models[model] & mask) == mask;
         }
@@ -110,7 +110,7 @@ namespace esa
          * @param value The value to assign to the field.
          */
         template<u32 Model, u32 Field>
-        void add()
+        inline void add()
         {
             BN_ASSERT(Field < 32, "ESA ERROR: maximum number of bool fields exceeded!");
             *(_models + Model) |= (1 << Field);
@@ -124,7 +124,7 @@ namespace esa
          * @param value The value to assign to the field.
          */
         template<u32 Field>
-        void set(u32 e, bool value)
+        inline void set(u32 e, bool value)
         {
             if (value)
                 *(_fields + e) |= 1 << Field;
@@ -140,19 +140,19 @@ namespace esa
          * @return T The value of the field for the entity, as a `bool`.
          */
         template<u32 Field>
-        bool get(u32 e)
+        inline bool get(u32 e)
         {
             if ( ((*(_fields + e) >> Field) & 1) == 1 )
                 return true;
             return false;
         }
 
-        void clear(u32 e)
+        inline void clear(u32 e)
         {
             *(_fields + e) = 0;
         }
 
-        bool matching(u32 model, u32 mask)
+        inline bool matching(u32 model, u32 mask)
         {
             return (_models[model] & mask) == mask;
         }
@@ -184,7 +184,7 @@ namespace esa
          * @tparam Size The size (in bits) of the enum field.
          */
         template<u32 Model, u32 Field, u32 Size>
-        void add()
+        inline void add()
         {
             BN_ASSERT(Field + Size < 32, "ESA ERROR: maximum number of enum fields bits exceeded!");
             *(_models + Model) |= (((1 << Size) - 1) << Field);
@@ -199,7 +199,7 @@ namespace esa
          * @param value The value to assign to the field.
          */
         template<u32 Field, u32 Size>
-        void set(u32 e, u32 value)
+        inline void set(u32 e, u32 value)
         {
             *(_fields + e) &= ~(((1 << Size) - 1) << Field);
             *(_fields + e) |= (value << Field);
@@ -214,17 +214,17 @@ namespace esa
          * @return T The value of the field for this entity, as a `u32` (`unsigned int`).
          */
         template<u32 Field, u32 Size>
-        u32 get(u32 e)
+        inline u32 get(u32 e)
         {
             return ( *(_fields + e) >> Field) & ((1 << Size) - 1);
         }
 
-        void clear(u32 e)
+        inline void clear(u32 e)
         {
             *(_fields + e) = 0;
         }
 
-        bool matching(u32 model, u32 mask)
+        inline bool matching(u32 model, u32 mask)
         {
             return (_models[model] & mask) == mask;
         }
@@ -253,7 +253,7 @@ namespace esa
          * @param e The ID of the entity.
          * @param sprite A `bn::sprite_ptr` object to assign to this entity.
          */
-        void set(u32 e, const bn::sprite_ptr& sprite)
+        inline void set(u32 e, const bn::sprite_ptr& sprite)
         {
             *(_sprites + e) = sprite;
         }
@@ -264,7 +264,7 @@ namespace esa
          * @param e The ID of the entity.
          * @return bn::sprite_ptr& a reference to the entity's sprite.
          */
-        bn::sprite_ptr& get(u32 e)
+        inline bn::sprite_ptr& get(u32 e)
         {
             return (*(_sprites + e)).value();
         }
@@ -276,7 +276,7 @@ namespace esa
          * @return true 
          * @return false 
          */
-        bool has(u32 e)
+        inline bool has(u32 e)
         {
             return (*(_sprites + e)).has_value();
         }
@@ -286,7 +286,7 @@ namespace esa
          * 
          * @param e The ID of the entity.
          */
-        void clear(u32 e)
+        inline void clear(u32 e)
         {
             (*(_sprites + e)).reset();
         }
@@ -307,7 +307,7 @@ namespace esa
         public:
 
         template<u32 Model>
-        void add(u32 e)
+        inline void add(u32 e)
         {
             *(_models + e) = Model;
         }
@@ -318,12 +318,12 @@ namespace esa
          * @param e The ID of the entity.
          * @return u32 
          */
-        u32 get(u32 e)
+        inline u32 get(u32 e)
         {
             return *(_models + e);
         }
         
-        void clear(u32 e)
+        inline void clear(u32 e)
         {
             *(_models + e) = EM_NULL;
         }

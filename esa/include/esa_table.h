@@ -116,7 +116,7 @@ namespace esa
             {
                 if (!contains(e))
                 {
-                    *(_emask + e / 32) |= (1 << (e % 32));
+                    *(_emask + (e >> 5)) |= (1 << (e & 31));
                     _size++;
                     if (e == _used)
                         _used++;
@@ -145,7 +145,7 @@ namespace esa
             bools.clear(e);
             enums.clear(e);
             sprites.clear(e);
-            *(_emask + e / 32) &= ~(1 << (e % 32));
+            *(_emask + (e >> 5)) &= ~(1 << (e & 31));
             _size--;
             if (e == _used - 1)
                 _used--;
@@ -209,7 +209,7 @@ namespace esa
          */
         bool contains(u32 e)
         {
-            return (( *(_emask + e / 32) >> (e % 32) ) & 1) == 1;
+            return (( *(_emask + (e >> 5)) >> (e & 31) ) & 1) == 1;
         }
 
 
@@ -320,9 +320,7 @@ namespace esa
                 for (auto u : _entity_updaters)
                 {
                     if (u->subscribed(e))
-                    {
                         u->update(e);
-                    }
                 }
             }
             for (auto u : _table_updaters)

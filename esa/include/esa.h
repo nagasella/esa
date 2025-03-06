@@ -70,7 +70,8 @@ namespace esa
 }
 
 #include "esa_arrays.h"
-#include "esa_table.h"
-#include "esa_updaters.h"
+#include "esa_entity_table.h"
+#include "esa_table_updater.h"
+#include "esa_entity_updater.h"
 
 #endif

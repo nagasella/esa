@@ -329,7 +329,17 @@ Also useful to note that ESA makes extensive use of templates for handling stuff
 
 ## Queries
 
-Queries can be defined in order to retrieve entities that satisfy a certain condition. Queries are defined as `bool` functions, and they take as paramters the `entity_table` on which they will work, as well as an entity ID. The query function is applied per-entity, and it should return `true` if the entity satisfies the query criteria, otherwise `false`. Here is an example of a query form the `colored-squares` example project, which finds all entities of `RED_SQUARE` type:
+Queries are used to obtain a list of IDs of entities that satisfy a certain condition. They return a `bn::vector` containing the IDs of the entities. Queries can be performed on a table by using one of the overloads of its `query` member function. 
+
+The simplest type of query is one that returns all the entities processed by a certain entity updater. The updater has to be identified by its unique tag in the function template parameters. The query can be performed like in the following example (see the `colored-suqares` example project):
+
+```cpp
+bn::vector<esa::u32, 128> = table.query<tags::ROTATION, 128>();
+```
+
+Here the number `128` is just an example: the user needs to specify the expected maximum number of IDs that will be returned by the query. In some cases, it may be possible that this is not known at compile time, so it's important to be careful about this: all the entities that do not fit into the vector will be ignored by ESA.
+
+The second type of queries are user-defined queries. These can be defined as `bool` functions, and they take as paramters the `entity_table` on which they will work, as well as an entity ID. The query function is applied per-entity, and it should return `true` if the entity satisfies the query criteria, otherwise `false`. Here is an example of a user-defined query form the `colored-squares` example project, which finds all entities of `RED_SQUARE` type:
 
 ```cpp
 bool cs::queries::find_red_squares(entity_table& table, u32 e)
@@ -340,10 +350,10 @@ bool cs::queries::find_red_squares(entity_table& table, u32 e)
 }
 ```
 
-Then, the function can be used to query a table, generally from whithin some updater, to obtain a `bn::vector` with all the entity IDs that satisfy the condition. For example, the query above is ran as follows:
+Then, the function can be used to query a table, generally from whithin some updater, to obtain a `bn::vector` containing all the entity IDs that satisfy the condition. For example, the query above is ran as follows:
 
 ```cpp
-bn::vector<u32, 128> red_squares = table.query<128>(&cs::queries::find_red_squares);
+bn::vector<esa::u32, 128> red_squares = table.query<128>(&cs::queries::find_red_squares);
 ```
 
 The query returns a `bn::vector` with the IDs of the entities that satisfy the query condition. The size of the vector may not always be known at compile time, so it is important to be careful with this.
@@ -368,7 +378,7 @@ bool cs::queries::destroy_first_blue_square(entity_table& table, u32 e)
 }
 ```
 
-The function must return a `bool` value: if it returns `true`, the execution of the `apply` is interrupted, otheriwise it continues with the next entities. In the case above, we want to delete only the first entity of type `BLUE_SQUARE` appearing in the table, therefore we simply return `true` whenever we find an entity that satisfies this condition. This allows to avoid unnecessary iterations on the table.
+The function must return a `bool` value: if it returns `true`, the execution of the `apply` routine is interrupted, otheriwise it continues with the next entities. In the case above, we want to delete only the first entity of type `BLUE_SQUARE` appearing in the table, therefore we simply return `true` whenever we find an entity that satisfies this condition. This allows to avoid unnecessary iterations on the table.
 
 Then, the function can be used like this:
 
@@ -377,3 +387,5 @@ table.apply(&cs::queries::destroy_first_blue_square);
 ```
 
 Similarly to `query`, also `apply` allows to pass an additional parameter to the applied function.
+
+As a general note, it is better to avoid to abuse the `apply` function: most of the logic of the game should sit inside the entity updaters, and `apply` should be only used in very specific instances, for example to trigger a certain event at a specific moment in the game.

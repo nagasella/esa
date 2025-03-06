@@ -6,86 +6,15 @@
  * 
  */
 
-#ifndef ESA_UPDATERS_H
-#define ESA_UPDATERS_H
+#ifndef ESA_ENTITY_UPDATER_H
+#define ESA_ENTITY_UPDATER_H
+
+#include "bn_vector.h"
 
 #include "esa.h"
 
 namespace esa
 {
-
-    template<typename Table>
-    class table_updater
-    {
-
-        u32 _tag;
-
-        protected:
-
-        /**
-         * @brief A reference to the `entity_table` this updater works on.
-         * 
-         */
-        Table& table;
-
-
-        public:
-
-
-        /**
-         * @brief Constructor.
-         * 
-         * @param t A reference to the `entity_table` associated to this updater.
-         * @param tag The tag to assign to this udpater.
-         */
-        table_updater(Table& t, u32 tag)
-            : table(t), _tag(tag)
-        {
-
-        }
-
-
-        /**
-         * @brief Get the tag assigned to this updater.
-         * 
-         */
-        virtual u32 tag()
-        {
-            return _tag;
-        }
-
-
-        /**
-         * @brief Initialize the updater.
-         * 
-         */
-        virtual void init()
-        {
-            
-        }
-
-        
-        /**
-         * @brief Perform operations on the `entitiy_table` associated to this updater.
-         * 
-         */
-        virtual void update()
-        {
-
-        }
-
-
-        /**
-         * @brief Destructor.
-         * 
-         */
-        virtual ~table_updater()
-        {
-
-        }
-
-    };
-
 
     template<typename Table>
     class entity_updater
@@ -315,6 +244,29 @@ namespace esa
         bool subscribed(u32 e)
         {
             return (( *(_emask + (e >> 5)) >> (e & 31)) & 1) == 1; 
+        }
+
+
+        /**
+         * @brief Returns a `bn::vector` containing the ids of the subscribed entities.
+         * 
+         * @tparam Size The expected maximum size of the vector.
+         * @return bn::vector<u32, Size> 
+         */
+        template<u32 Size>
+        bn::vector<u32, Size> subscribed()
+        {
+            bn::vector<u32, Size> ids;
+
+            for (u32 e = 0; e < 256; e++)
+            {
+                if (subscribed(e))
+                    ids.push_back(e);
+                if (ids.size() == Size)
+                    break;
+            }
+
+            return ids;
         }
 
 

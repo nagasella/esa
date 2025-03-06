@@ -17,8 +17,6 @@ namespace cs::queries
     // applied functions
     bool destroy_first_blue_square(entity_table& table, u32 e);
     bool incr_blue_squares_velocity(entity_table& table, u32 e);
-    bool decr_first_blue_square_velocity(entity_table& table, u32 e);
-
     
 }
 

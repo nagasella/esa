@@ -33,7 +33,7 @@
 #---------------------------------------------------------------------------------------------------------------------
 TARGET      	:=  $(notdir $(CURDIR))
 BUILD       	:=  build
-LIBBUTANO   	:=  ../../../butano-master/butano
+LIBBUTANO   	:=  ../../../butano/butano
 PYTHON      	:=  python
 SOURCES     	:=  src
 INCLUDES    	:=  include ../../esa/include

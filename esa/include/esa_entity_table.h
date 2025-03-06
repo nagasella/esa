@@ -11,7 +11,8 @@
 
 #include "esa.h"
 #include "esa_arrays.h"
-#include "esa_updaters.h"
+#include "esa_table_updater.h"
+#include "esa_entity_updater.h"
 
 #include "bn_assert.h"
 #include "bn_vector.h"
@@ -327,10 +328,26 @@ namespace esa
                 u->update();
         }
 
+
         /**
-         * @brief Run a query on the table, returning the IDs of the entities that satisfy the query condition.
+         * @brief Run a query to obtain the IDs of the entities processed by a certain `entity_updater`.
          * 
-         * @tparam size The expected maximum size of the bn::vector to return.
+         * @tparam Tag The unique tag of the `entity_updater`.
+         * @tparam Size The expected maximum size of the bn::vector to return.
+         * @param func A pointer to the function implementing the query condition.
+         * @return bn::vector<u32, size> A vector with the IDs of the entities that satisfy the query condition.
+         */
+        template<u32 Tag, u32 Size>
+        bn::vector<u32, Size> query()
+        {
+            return get_entity_updater<Tag>()->template subscribed<Size>();
+        }
+
+
+        /**
+         * @brief Run a user defined query on the table.
+         * 
+         * @tparam Size The expected maximum size of the bn::vector to return.
          * @param func A pointer to the function implementing the query condition.
          * @return bn::vector<u32, size> A vector with the IDs of the entities that satisfy the query condition.
          */
@@ -342,37 +359,39 @@ namespace esa
             {
                 if (contains(e) && (*func)(*this, e))
                     ids.push_back(e);
+                if (ids.size() == Size)
+                    break;
             }
             return ids;
         }
 
 
         /**
-         * @brief Run a query on the table, returning the IDs of the entities that satisfy the query condition.
-         * This function allows to pass an object containing parameters to use in the query.
+         * @brief Run a user defined query on the table, passing some extra parameter for dynamic filtering.
          * 
-         * @tparam size The expected maximum size of the bn::vector to return.
+         * @tparam Size The expected maximum size of the bn::vector to return.
          * @tparam T The type of the object that will be passed to the query function.
          * @param func A pointer to the function implementing the query condition.
-         * @param parameters A reference to the object that will be passed as a parameter to the query function.
+         * @param parameters A reference to the object passed as a parameter to the query function.
          * @return bn::vector<u32, size> A vector with the IDs of the entities that satisfy the query condition.
          */
-        template<u32 size, typename T>
-        bn::vector<u32, size> query(bool (*func) (entity_table<Entities, Models, Fixed, Ints, EntityUpdaters, TableUpdaters>&, u32, T&), T& parameters)
+        template<u32 Size, typename T>
+        bn::vector<u32, Size> query(bool (*func) (entity_table<Entities, Models, Fixed, Ints, EntityUpdaters, TableUpdaters>&, u32, T&), T& parameters)
         {
-            bn::vector<u32, size> ids;
+            bn::vector<u32, Size> ids;
             for (u32 e = 0; e < used(); e++)
             {
                 if (contains(e) && (*func)(*this, e, parameters))
                     ids.push_back(e);
+                if (ids.size() == Size)
+                    break;
             }
             return ids;
         }
 
 
         /**
-         * @brief Applies a function to a table. Differently from queries, the
-         * applied function is supposed to modify entities and their fields in some way, based on a condition.
+         * @brief Applies a function to the table, to modify the entities in the table conditionally.
          * 
          * @param func A pointer to the function to apply.
          */
@@ -391,8 +410,8 @@ namespace esa
 
 
         /**
-         * @brief Apply a function to a table. Differently from queries, the
-         * applied function is supposed to modify entities and their fields in some way, based on a condition.
+         * @brief Applies a function to the table, to modify the entities in the table conditionally,
+         * passing some extra parameter for dynamic filtering.
          * 
          * @tparam T The type of the object that will be passed to the applied function.
          * @param func A pointer to the function to be applied.

@@ -39,14 +39,14 @@ void cs::u_entity_manager::update()
         // delete all entities in the table
         table.clear();
     }
-    // delete all the red squares
+    // delete all the rotating squares
     else if (bn::keypad::left_pressed())
     {
-        // run a query
-        bn::vector<u32, 128> red_squares = table.query<128>(&queries::find_red_squares);
+        // get all the entities processed by the updater with tag ROTATION
+        bn::vector<u32, 128> rotating_squares = table.query<tags::ROTATION, 128>();
 
         // modify all the entities returned by the query
-        for (auto e : red_squares)
+        for (auto e : rotating_squares)
             table.destroy(e);
     }
     // freeze all the yellow squares with -64 < x < 64
@@ -65,10 +65,16 @@ void cs::u_entity_manager::update()
             table.fixed.set<fields::VY>(e, 0);
         }
     }
-    // Destroy the first blue square found in the table
+    // Destroy the first blue square found in the table, and all the red squares
     else if (bn::keypad::l_pressed())
     {
-        // apply a function to the table
+        // destroy the first blue square
         table.apply(&queries::destroy_first_blue_square);
+
+        // find all the red squares and destroy them
+        bn::vector<u32, 128> red_squares = table.query<128>(&queries::find_red_squares);
+
+        for (auto e : red_squares)
+            table.destroy(e);
     }
 }

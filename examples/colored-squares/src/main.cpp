@@ -1,5 +1,4 @@
 #include "bn_core.h"
-#include "bn_keypad.h"
 
 #include "esa.h"
 
@@ -16,8 +15,6 @@ using namespace cs;
 
 int main()
 {
-    bool profiling = false;
-
     bn::core::init();
 
     // Define an entity table
@@ -74,7 +71,6 @@ int main()
 
     while (true)
     {
-        // Update everything
         table.update();
         bn::core::update();
     }

@@ -30,11 +30,11 @@ Below is a basic introduction to Entity Systems, as well as a comprehensive tuto
 
 [12. Update order](#update-order)
 
-[14. Queries](#queries)
+[13. Queries](#queries)
 
-[15. Apply](#apply)
+[14. Apply](#apply)
 
-[13. Memory allocation of ESA objects](#memory-allocation-of-esa-objects)
+[15. Memory allocation of ESA objects](#memory-allocation-of-esa-objects)
 
 
 ## An introduction to Entity Systems

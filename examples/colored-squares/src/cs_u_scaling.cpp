@@ -9,10 +9,9 @@ cs::u_scaling::u_scaling(entity_table& t) :
     
 }
 
-void cs::u_scaling::require()
+bool cs::u_scaling::select(entity_model model)
 {
-    // This updater will process only entities that have a SCALE enum field
-    require_enum<fields::SCALE, fields::SCALE_SZ>();
+    return table.uints.has<fields::SCALE, fields::SCALE_SZ>(model);
 }
 
 void cs::u_scaling::init()
@@ -20,10 +19,10 @@ void cs::u_scaling::init()
 
 }
 
-void cs::u_scaling::update(u32 e)
+void cs::u_scaling::update(entity e)
 {
     // read the fields
-    u32 scale = table.enums.get<fields::SCALE, fields::SCALE_SZ>(e);
+    uintn_t scale = table.uints.get<fields::SCALE, fields::SCALE_SZ>(e);
 
     // modify the scale
     if (bn::keypad::a_pressed())
@@ -39,5 +38,5 @@ void cs::u_scaling::update(u32 e)
         table.sprites.get(e).set_scale((bn::fixed) 1 / scale);
 
     // update the fields
-    table.enums.set<fields::SCALE, fields::SCALE_SZ>(e, scale);
+    table.uints.set<fields::SCALE, fields::SCALE_SZ>(e, scale);
 }

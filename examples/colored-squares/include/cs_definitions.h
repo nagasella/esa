@@ -5,12 +5,14 @@
 
 namespace cs
 {
-    using u32 = esa::u32;
-
     // Parametrization of an entity table and its updaters
-    using entity_table   = esa::entity_table<128, 4, 4, 1, 5, 1>;
+    using entity         = esa::entity;
+    using entity_model   = esa::entity_model;
+    using uintn_t        = esa::uintn_t;
+    using entity_table   = esa::entity_table<128, 4, 4, 1>;
     using entity_updater = esa::entity_updater<entity_table>;
     using table_updater  = esa::table_updater<entity_table>;
+    using cached_query   = esa::cached_query<entity_table>;
 
     // Table fields
     namespace fields
@@ -65,7 +67,9 @@ namespace cs
             SCALING = 2,
             VISIBILITY = 3,
             ENTITY_MANAGER = 4,
-            ANIMATION = 5
+            ANIMATION = 5,
+
+            QRY_ROTATION = 6
         };
     }
     

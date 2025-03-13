@@ -13,12 +13,9 @@
 // Updaters tags
 #define MOVEMENT 0
 
-using u32 = esa::u32;
-
 // Parametrization of an entity table and its updaters
-using entity_table = esa::entity_table<2, 1, 2, 0, 1, 1>;
+using entity_table = esa::entity_table<2, 1, 2, 0>;
 using entity_updater = esa::entity_updater<entity_table>;
-using table_updater = esa::table_updater<entity_table>;
 
 // This updater changes the x, y coordinates of entities based on their velocity
 class u_movement : public entity_updater
@@ -32,11 +29,11 @@ class u_movement : public entity_updater
 
     }
 
-    // Will process only entities with the fields defined here
-    void require() override
+    // This updater will process only entities that satisfy this filter
+    bool select(esa::entity_model model) override
     {
-        require_fixed<VX>();
-        require_fixed<VY>();
+        return table.fixed.has<VX>(model)
+            && table.fixed.has<VY>(model);
     }
 
     // Initialize
@@ -45,8 +42,8 @@ class u_movement : public entity_updater
 
     }
 
-    // Update each entity
-    void update(u32 e) override
+    // Update each entity processed by this updater
+    void update(esa::entity e) override
     {
         // Read this entity's fields from the table
         bn::fixed x  = table.sprites.get(e).x();
@@ -109,7 +106,7 @@ int main()
     table.init();
 
     // Add an entity to the table, according to a previously defined model
-    u32 e = table.create<SQUARE>();
+    esa::entity e = table.create<SQUARE>();
     table.fixed.set<VX>(e, 0.5);
     table.fixed.set<VY>(e, 0.5);
     table.sprites.set(e, bn::sprite_items::squares.create_sprite(0, 0));

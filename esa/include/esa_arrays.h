@@ -18,29 +18,42 @@ namespace esa
 {
 
     /**
-     * @brief An array of fields of a certain type.
+     * @brief An array of entity fields of a certain type.
      * 
-     * @tparam T the type of Field this `field_array` contains.
-     * @tparam Entities The maximum number of Entities this `field_array` can work with.
-     * @tparam Models The maximum number of Entity Models this `field_array` can work with.
-     * @tparam Size The maximum number of variables of type `T` this `field_array` can store.
+     * @tparam T The type of field this array contains.
+     * @tparam Entities The maximum number of entities this array can work with.
+     * @tparam Models The maximum number of entity models this array can work with.
+     * @tparam Size The maximum number of variables of type `T` this array can store.
      */
     template<typename T, u32 Entities, u32 Models, u32 Size>
     class field_array
     {
-        u32 _models [Size == 0 ? 1 : Models];
-        T   _fields [Size == 0 ? 1 : Entities * Size];
+
+        entity_model _models [Size == 0 ? 1 : Models];
+        T _fields [Size == 0 ? 1 : Entities * Size];
 
         public:
 
         /**
+         * @brief Constructor.
+         * 
+         */
+        field_array()
+        {
+            for (entity_model m = 0; m < (Size == 0 ? 1 : Models); m++)
+                *(_models + m) = 0;
+            for (u32 f = 0; f < (Size == 0 ? 1 : Entities * Size); f++)
+                *(_fields + f) = 0;
+        }
+
+        /**
          * @brief Mark and entity model as possessing a specific field.
          * 
-         * @tparam Model The entity model
-         * @tparam Field The field to assign
+         * @tparam Model The entity model.
+         * @tparam Field The field to assign.
          */
-        template<u32 Model, u32 Field>
-        inline void add()
+        template<entity_model Model, field_t Field>
+        void add()
         {
             BN_ASSERT(Field < Size, "ESA ERROR: maximum number of fields exceeeded!");
             *(_models + Model) |= (1 << Field);
@@ -53,8 +66,8 @@ namespace esa
          * @param e The ID of the entity.
          * @param value The value to assign to the field.
          */
-        template<u32 Field>
-        inline void set(u32 e, T value)
+        template<field_t Field>
+        void set(entity e, T value)
         {
             *(_fields + e * Size + Field) = value;
         }
@@ -66,21 +79,35 @@ namespace esa
          * @param e The ID of the entity.
          * @return T The value of the field for the entity.
          */
-        template<u32 Field>
-        inline T get(u32 e)
+        template<field_t Field>
+        T get(entity e)
         {
             return *(_fields + e * Size + Field);
         }
+
+        /**
+         * @brief Tells if an entity model owns a certain field.
+         * 
+         * @tparam Field The field to check for.
+         * @param model The model to check.
+         * @return true 
+         * @return false 
+         */
+        template<field_t Field>
+        bool has(entity_model model)
+        {
+            return ((_models[model] >> Field) & 1) == 1;
+        }
         
-        inline void clear(u32 e)
+        /**
+         * @brief Clear the fields for an entity.
+         * 
+         * @param e The entitiy ID.
+         */
+        void clear(entity e)
         {
             for (u32 f = 0; f < Size; f++)
                 *(_fields + e * Size + f) = 0;
-        }
-
-        inline bool matching(u32 model, u32 mask)
-        {
-            return (_models[model] & mask) == mask;
         }
 
     };
@@ -90,16 +117,28 @@ namespace esa
      * @brief An array of `bool` fields, each stored inside a 32-bits `unsigned int`.
      * For each entity, a `bool_array` can store up to 32 `bool` fields.
      * 
-     * @tparam Entities The maximum number of entities this `field_array` can work with. 
-     * @tparam Models The maximum number of entity models this `field_array` can work with.
+     * @tparam Entities The maximum number of entities this array can work with. 
+     * @tparam Models The maximum number of entity models this array can work with.
      */
     template<u32 Entities, u32 Models>
     class bool_array
     {
-        u32 _models [Models];
+        entity_model _models [Models];
         u32 _fields [Entities];
 
         public:
+
+        /**
+         * @brief Constructor.
+         * 
+         */
+        bool_array()
+        {
+            for (entity_model m = 0; m < Models; m++)
+                *(_models + m) = 0;
+            for (entity e = 0; e < Entities; e++)
+                *(_fields + e) = 0;
+        }
 
         /**
          * @brief Mark and entity model as possessing a specific `bool` field.
@@ -109,22 +148,22 @@ namespace esa
          * @param e The ID of the entity.
          * @param value The value to assign to the field.
          */
-        template<u32 Model, u32 Field>
-        inline void add()
+        template<entity_model Model, field_t Field>
+        void add()
         {
             BN_ASSERT(Field < 32, "ESA ERROR: maximum number of bool fields exceeded!");
             *(_models + Model) |= (1 << Field);
         }
 
         /**
-         * @brief Assign a value to a field of a certain entity.
+         * @brief Assign a value to a `bool` field of a certain entity.
          * 
          * @tparam Field The ID of the field.
          * @param e The ID of the entity.
          * @param value The value to assign to the field.
          */
-        template<u32 Field>
-        inline void set(u32 e, bool value)
+        template<field_t Field>
+        void set(entity e, bool value)
         {
             if (value)
                 *(_fields + e) |= 1 << Field;
@@ -133,100 +172,140 @@ namespace esa
         }
 
         /**
-         * @brief Obtain the value of a field for a certain entity.
+         * @brief Obtain the value of a `bool` field for a certain entity.
          * 
          * @tparam Field The ID of the field.
          * @param e The ID of the entity.
          * @return T The value of the field for the entity, as a `bool`.
          */
-        template<u32 Field>
-        inline bool get(u32 e)
+        template<field_t Field>
+        bool get(entity e)
         {
             if ( ((*(_fields + e) >> Field) & 1) == 1 )
                 return true;
             return false;
         }
 
-        inline void clear(u32 e)
+        /**
+         * @brief Tells if an entity model owns a certain `bool` field.
+         * 
+         * @tparam Field The field to check for.
+         * @param model The model to check.
+         * @return true 
+         * @return false 
+         */
+        template<field_t Field>
+        bool has(entity model)
         {
-            *(_fields + e) = 0;
+            return ((_models[model] >> Field) & 1) == 1;
         }
 
-        inline bool matching(u32 model, u32 mask)
+        /**
+         * @brief Clear all the `bool` fields for an entity.
+         * 
+         * @param e The ID of the entity.
+         */
+        void clear(entity e)
         {
-            return (_models[model] & mask) == mask;
+            *(_fields + e) = 0;
         }
 
     };
 
 
     /**
-     * @brief An array of `enum` fields.
-     * For each Entity, `enum` fields are stored as a set of 1 or more bits inside a 32-bits `unsigned int`.
-     * Up to 32 bits are available for each Entity for enum fields.
+     * @brief An array of `uintn_t` fields (unsigned integers of n bits).
+     * For each Entity, `uintn_t` fields are stored as a set of 1 or more bits inside a 32-bits `unsigned int`.
+     * Up to 32 bits are available for each Entity for unit_t fields.
      * 
-     * @tparam Entities The maximum number of entities this `field_array` can work with. 
-     * @tparam Models The maximum number of entity models this `field_array` can work with.
+     * @tparam Entities The maximum number of entities this array can work with. 
+     * @tparam Models The maximum number of entity models this array can work with.
      */
     template<u32 Entities, u32 Models>
-    class enum_array
+    class uintn_array
     {
-        u32 _models [Models];
+        entity_model _models [Models];
         u32 _fields [Entities];
 
         public:
 
         /**
-         * @brief Mark and entity model as possessing a specific `enum` field.
+         * @brief Constructor.
+         * 
+         */
+        uintn_array()
+        {
+            for (entity_model m = 0; m < Models; m++)
+                *(_models + m) = 0;
+            for (entity e = 0; e < Entities; e++)
+                *(_fields + e) = 0;
+        }
+
+        /**
+         * @brief Mark and entity model as possessing a specific `uintn_t` field.
          * 
          * @tparam Model The model of the entity.
          * @tparam Field The field to assign.
          * @tparam Size The size (in bits) of the enum field.
          */
-        template<u32 Model, u32 Field, u32 Size>
-        inline void add()
+        template<entity_model Model, field_t Field, uintn_size Size>
+        void add()
         {
             BN_ASSERT(Field + Size < 32, "ESA ERROR: maximum number of enum fields bits exceeded!");
-            *(_models + Model) |= (((1 << Size) - 1) << Field);
+            *(_models + Model) |= (1 << Field);
         }
 
         /**
-         * @brief Assign a value to a field of a certain entity.
+         * @brief Assign a value to a `uintn_t` field of a certain entity.
          * 
          * @tparam Field The ID of the field.
          * @tparam Size The size (in bits) of the field.
          * @param e The ID of the entity.
          * @param value The value to assign to the field.
          */
-        template<u32 Field, u32 Size>
-        inline void set(u32 e, u32 value)
+        template<field_t Field, uintn_size Size>
+        void set(entity e, uintn_t value)
         {
             *(_fields + e) &= ~(((1 << Size) - 1) << Field);
             *(_fields + e) |= (value << Field);
         }
 
         /**
-         * @brief Obtain the value of a field for a certain entity.
+         * @brief Obtain the value of a `uintn_t` field for a certain entity.
          * 
          * @tparam Field The ID of the field to retrieve.
          * @tparam Size The size (in bits) of the field.
          * @param e The ID of the entity.
-         * @return T The value of the field for this entity, as a `u32` (`unsigned int`).
+         * @return T The value of the field for this entity.
          */
-        template<u32 Field, u32 Size>
-        inline u32 get(u32 e)
+        template<field_t Field, uintn_size Size>
+        uintn_t get(entity e)
         {
             return ( *(_fields + e) >> Field) & ((1 << Size) - 1);
         }
 
-        inline void clear(u32 e)
+        /**
+         * @brief Tells if an entity model owns a certain `uintn_t` field.
+         * 
+         * @tparam Field The field to check for.
+         * @param model The model to check.
+         * @return true 
+         * @return false 
+         */
+        template<field_t Field, uintn_size Size>
+        bool has(entity_model model)
         {
-            *(_fields + e) = 0;
+            return ((_models[model] >> Field) & 1) == 1;
         }
 
-        inline bool matching(u32 model, u32 mask)
+        /**
+         * @brief Clear all the `uintn_t` fields for an entity.
+         * 
+         * @param e The ID of the entity.
+         */
+        void clear(entity e)
         {
-            return (_models[model] & mask) == mask;
+            *(_fields + e) = 0;
         }
 
     };
@@ -234,11 +313,11 @@ namespace esa
 
     /**
      * @brief An array of optional `bn::sprite_ptr` objects.
-     * A `bn::sprite_ptr` can be stored for each entity. Since the objects are optional
-     * a `sprite_array` is not limited to 128 sprites - the important thing is that no more than
-     * 128 sprites are present at the same time in the array.
+     * A single `bn::sprite_ptr` can be stored for each entity. Since the objects are optional,
+     * a `sprite_array` is not limited to 128 elements - the important thing is that no more than
+     * 128 sprites are present at the same time on screen.
      * 
-     * @tparam Entities The maximum number of entities this `sprite_array` can work with. 
+     * @tparam Entities The maximum number of entities this array can work with. 
      */
     template<u32 Entities>
     class sprite_array
@@ -253,7 +332,7 @@ namespace esa
          * @param e The ID of the entity.
          * @param sprite A `bn::sprite_ptr` object to assign to this entity.
          */
-        inline void set(u32 e, const bn::sprite_ptr& sprite)
+        void set(entity e, const bn::sprite_ptr& sprite)
         {
             *(_sprites + e) = sprite;
         }
@@ -264,7 +343,7 @@ namespace esa
          * @param e The ID of the entity.
          * @return bn::sprite_ptr& a reference to the entity's sprite.
          */
-        inline bn::sprite_ptr& get(u32 e)
+        bn::sprite_ptr& get(entity e)
         {
             return (*(_sprites + e)).value();
         }
@@ -276,7 +355,7 @@ namespace esa
          * @return true 
          * @return false 
          */
-        inline bool has(u32 e)
+        bool has(entity e)
         {
             return (*(_sprites + e)).has_value();
         }
@@ -286,7 +365,7 @@ namespace esa
          * 
          * @param e The ID of the entity.
          */
-        inline void clear(u32 e)
+        void clear(entity e)
         {
             (*(_sprites + e)).reset();
         }
@@ -297,17 +376,33 @@ namespace esa
      * @brief An array of entity models.
      * For each entity, its corresponding model is stored.
      * 
-     * @tparam Entities The maximum number of entities this `sprite_array` can work with. 
+     * @tparam Entities The maximum number of entities this array can work with. 
      */
     template<u32 Entities>
     class model_array
     {
-        u32 _models [Entities];
+        entity_model _models [Entities];
 
         public:
 
-        template<u32 Model>
-        inline void add(u32 e)
+        /**
+         * @brief Constructor.
+         * 
+         */
+        model_array()
+        {
+            for (entity e = 0; e < Entities; e++)
+                *(_models + e) = 0xffffffff;
+        }
+
+        /**
+         * @brief Assign a model to an entity.
+         * 
+         * @tparam Model The model to assign.
+         * @param e The entity ID.
+         */
+        template<entity_model Model>
+        void add(entity e)
         {
             *(_models + e) = Model;
         }
@@ -318,14 +413,19 @@ namespace esa
          * @param e The ID of the entity.
          * @return u32 
          */
-        inline u32 get(u32 e)
+        u32 get(entity e)
         {
             return *(_models + e);
         }
         
-        inline void clear(u32 e)
+        /**
+         * @brief Clear the model for an entity.
+         * 
+         * @param e The entity ID.
+         */
+        void clear(entity e)
         {
-            *(_models + e) = EM_NULL;
+            *(_models + e) = 0xffffffff;
         }
 
     };

@@ -1,13 +1,13 @@
 /**
- * @file esa_entity_updater.h
+ * @file esa_cached_apply.h
  * @author nagasella
  * 
  * @copyright Copyright (c) 2025
  * 
  */
 
-#ifndef ESA_ENTITY_UPDATER_H
-#define ESA_ENTITY_UPDATER_H
+#ifndef ESA_CACHED_APPLY_H
+#define ESA_CACHED_APPLY_H
 
 #include "bn_vector.h"
 
@@ -17,9 +17,8 @@ namespace esa
 {
 
     template<typename Table>
-    class entity_updater
+    class cached_apply
     {
-
         tag_t _tag;
         u16 _emask [16];
 
@@ -42,7 +41,7 @@ namespace esa
          * @param table A reference to the table associated to this updater.
          * @param tag_t A unique tag to assign to this updater.
          */
-        entity_updater(Table& t, tag_t tag) 
+        cached_apply(Table& t, tag_t tag) 
             : table(t), _tag(tag)
         {
             for (u16 i = 0; i < 16; i++)
@@ -51,7 +50,7 @@ namespace esa
 
 
         /**
-         * @brief Get the unique tag assigned to this updater.
+         * @brief Get the unique tag of this updater.
          * 
          */
         tag_t tag()
@@ -82,19 +81,23 @@ namespace esa
 
 
         /**
-         * @brief Update each entity subscribed to this updater 
-         * (the ones that satisfy the `select` clause).
+         * @brief Applies the content of this function to all entities
+         * that satisfy the `select` clause. This function should return `true` if
+         * the execution of the apply needs to be interrupted at the current entity ID,
+         * otherwise `false`.
          * 
-         * @param e The ID of the entity.
+         * @param e The ID of each entity.
+         * @return true 
+         * @return false 
          */
-        virtual void update(entity e)
+        virtual bool apply(entity e)
         {
-
+            return true;
         }
 
 
         /**
-         * @brief Tells whether this updater currently has no entity.
+         * @brief Tells whether this cached apply currently has no subscribed entity.
          * 
          * @return true 
          * @return false 
@@ -111,7 +114,7 @@ namespace esa
 
 
         /**
-         * @brief Subscribe an entity to this udpater, if applicable. 
+         * @brief Subscribe an entity to this cached apply, if applicable.
          * 
          * @param e The ID of the entity.
          */
@@ -123,7 +126,7 @@ namespace esa
 
 
         /**
-         * @brief Unsubscribe an entity from this updater. 
+         * @brief Unsubscribe an entity from this cached apply.
          * 
          * @param e The ID of the entity.
          */
@@ -134,7 +137,7 @@ namespace esa
 
 
         /**
-         * @brief Tells if an entity is currently subscribed to this updater.
+         * @brief Tells if an entity is currently subscribed to this cached apply.
          * 
          * @param e The ID of the entity.
          * @return true 
@@ -150,7 +153,7 @@ namespace esa
          * @brief Destructor.
          * 
          */
-        virtual ~entity_updater() = default;
+        virtual ~cached_apply() = default;
 
     };
 

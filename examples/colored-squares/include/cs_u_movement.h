@@ -10,9 +10,9 @@ namespace cs
         public:
 
         u_movement(entity_table& t);
-        void require() override;
+        bool select(entity_model model) override;
         void init() override;
-        void update(u32 e) override;
+        void update(entity e) override;
     };
 }
 

@@ -18,12 +18,12 @@ namespace esa
     class table_updater
     {
 
-        u32 _tag;
+        tag_t _tag;
 
         protected:
 
         /**
-         * @brief A reference to the `entity_table` this updater works on.
+         * @brief A reference to the table this updater works on.
          * 
          */
         Table& table;
@@ -35,10 +35,10 @@ namespace esa
         /**
          * @brief Constructor.
          * 
-         * @param t A reference to the `entity_table` associated to this updater.
-         * @param tag The tag to assign to this udpater.
+         * @param t A reference to the table associated to this updater.
+         * @param tag_t A unique tag to assign to this udpater.
          */
-        table_updater(Table& t, u32 tag)
+        table_updater(Table& t, tag_t tag)
             : table(t), _tag(tag)
         {
 
@@ -46,10 +46,10 @@ namespace esa
 
 
         /**
-         * @brief Get the tag assigned to this updater.
+         * @brief Get the unique tag assigned to this updater.
          * 
          */
-        virtual u32 tag()
+        tag_t tag()
         {
             return _tag;
         }
@@ -66,7 +66,7 @@ namespace esa
 
         
         /**
-         * @brief Perform operations on the `entitiy_table` associated to this updater.
+         * @brief Perform operations on the table associated to this updater.
          * 
          */
         virtual void update()
@@ -79,10 +79,7 @@ namespace esa
          * @brief Destructor.
          * 
          */
-        virtual ~table_updater()
-        {
-
-        }
+        virtual ~table_updater() = default;
 
     };
 

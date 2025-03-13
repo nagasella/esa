@@ -10,10 +10,9 @@ cs::u_visibility::u_visibility(entity_table& t) :
     
 }
 
-void cs::u_visibility::require()
+bool cs::u_visibility::select(entity_model model)
 {
-    // This updater will process only entities that have a VISIBLE bool field
-    require_bool<fields::VISIBLE>();
+    return table.bools.has<fields::VISIBLE>(model);
 }
 
 void cs::u_visibility::init()
@@ -21,7 +20,7 @@ void cs::u_visibility::init()
 
 }
 
-void cs::u_visibility::update(u32 e)
+void cs::u_visibility::update(entity e)
 {
     // read the fields
     bool visible = table.bools.get<fields::VISIBLE>(e);

@@ -6,10 +6,9 @@ cs::u_rotation::u_rotation(entity_table& t) :
     
 }
 
-void cs::u_rotation::require()
+bool cs::u_rotation::select(entity_model model)
 {
-    // This updater will process only entities that have an ANGLE int field
-    require_int<fields::ANGLE>();
+    return table.intgs.has<fields::ANGLE>(model);
 }
 
 void cs::u_rotation::init()
@@ -17,7 +16,7 @@ void cs::u_rotation::init()
 
 }
 
-void cs::u_rotation::update(u32 e)
+void cs::u_rotation::update(entity e)
 {
     // read the fields
     int angle = table.intgs.get<fields::ANGLE>(e);

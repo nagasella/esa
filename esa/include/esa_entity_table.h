@@ -1,5 +1,5 @@
 /**
- * @file esa_table.h
+ * @file esa_entity_table.h
  * @author nagasella
  * 
  * @copyright Copyright (c) 2025
@@ -13,6 +13,7 @@
 #include "esa_arrays.h"
 #include "esa_table_updater.h"
 #include "esa_entity_updater.h"
+#include "esa_cached_query.h"
 
 #include "bn_assert.h"
 #include "bn_vector.h"
@@ -20,9 +21,15 @@
 namespace esa
 {
 
-    template<u32 Entities, u32 Models, u32 Fixed, u32 Ints, u32 EntityUpdaters, u32 TableUpdaters>
+    template<u32 Entities, u32 Models, u32 Fixed, u32 Ints>
     class entity_table
     {
+
+        using table          = entity_table<Entities, Models, Fixed, Ints>;
+        using entity_updater = entity_updater<table>;
+        using table_updater  = table_updater<table>;
+        using cached_query   = cached_query<table>;
+        using cached_apply   = cached_apply<table>;
 
         static_assert(Entities <= 256, "ESA ERROR: table cannot have more than 256 entities!");
         static_assert(Models   <= 32, "ESA ERROR: table cannot have more than 32 models!");
@@ -30,17 +37,22 @@ namespace esa
         static_assert(Ints     <= 32, "ESA ERROR: table cannot have more than 32 int fields!");
         static_assert(Entities > 0, "ESA ERROR: table must have at least 1 entity!");
         static_assert(Models   > 0, "ESA ERROR: table must have at least 1 model!");
-        static_assert(EntityUpdaters > 0, "ESA ERROR: table must have at least 1 entity updater!");
-        static_assert(TableUpdaters > 0, "ESA ERROR: table must have at least 1 table updater!");
-        
+
         u32 _size;
+        
         u32 _used;
 
-        u32 _mmask;
         u32 _emask [ (Entities - 1) / 32 + 1 ];
 
-        bn::vector<entity_updater<entity_table<Entities, Models, Fixed, Ints, EntityUpdaters, TableUpdaters>> *, EntityUpdaters> _entity_updaters;
-        bn::vector<table_updater<entity_table<Entities, Models, Fixed, Ints, EntityUpdaters, TableUpdaters>> *, TableUpdaters> _table_updaters;
+        bn::vector<entity_updater *, 128> * _entity_updaters;
+
+        bn::vector<table_updater *, 128> * _table_updaters;
+        
+        bn::vector<cached_query *, 128> * _cached_queries;
+        
+        bn::vector<cached_apply *, 128> * _cached_applys;
+        
+        bn::vector<u32, Entities>* _pooled_ids;
 
         public:
 
@@ -63,10 +75,10 @@ namespace esa
         bool_array<Entities, Models> bools;
 
         /**
-         * @brief Used to access/modify `enum` fields for each entity in the table.
+         * @brief Used to access/modify `unitn_t` fields for each entity in the table.
          * 
          */
-        enum_array<Entities, Models> enums;
+        uintn_array<Entities, Models> uints;
 
         /**
          * @brief Used to access/modify/remove the sprite of each entity in the table.
@@ -75,29 +87,26 @@ namespace esa
         sprite_array<Entities> sprites;
 
         /**
-         * @brief Used to read the entity model for each entity in the table.
+         * @brief Used to obtain the entity model for each entity in the table.
          * 
          */
         model_array<Entities>  models;
 
 
         /**
-         * @brief Default constructor.
+         * @brief Constructor.
          * 
          */
         entity_table() : _size(0), _used(0)
         {
-            for (u32 i = 0; i < (Entities - 1) / 32 + 1; i++)
-                *(_emask + i) = 0;
-            for (u32 e = 0; e < Entities; e++)
-            {
-                models.clear(e);
-                fixed.clear(e);
-                intgs.clear(e);
-                bools.clear(e);
-                enums.clear(e);
-                sprites.clear(e);
-            }
+            for (entity e = 0; e < (Entities - 1) / 32 + 1; e++)
+                *(_emask + e) = 0;
+                
+            _entity_updaters = new bn::vector<entity_updater *, 128>();
+            _table_updaters  = new bn::vector<table_updater *, 128>();
+            _cached_queries  = new bn::vector<cached_query *, 128>();
+            _cached_applys   = new bn::vector<cached_apply *, 128>();
+            _pooled_ids      = new bn::vector<u32, Entities>();
         }
 
 
@@ -107,49 +116,52 @@ namespace esa
          * @tparam Model The model to assign to the entity.
          * @return u32 The ID of the newly created entity.
          */
-        template<u32 Model>
-        u32 create()
+        template<entity_model Model>
+        entity create()
         {
             BN_ASSERT(!full(), "ESA ERROR: maximum entities capacity exceeded!");
             BN_ASSERT(Model < Models, "ESA ERROR: maximum number of entity models exceeeded!");
 
-            for (u32 e = 0; e <= _used; e++)
+            entity e = _used;
+
+            if (!_pooled_ids->empty())
             {
-                if (!contains(e))
-                {
-                    *(_emask + (e >> 5)) |= (1 << (e & 31));
-                    _size++;
-                    if (e == _used)
-                        _used++;
-                    models.template add<Model>(e);
-                    subscribe(e);
-                    return e;
-                }
+                e = _pooled_ids->back();
+                _pooled_ids->pop_back();
             }
-            return E_NULL;
+
+            *(_emask + (e >> 5)) |= (1 << (e & 31));
+            _size++;
+            if (e == _used)
+                _used++;
+            models.template add<Model>(e);
+            subscribe(e, Model);
+            return e;
         }
 
 
         /**
          * @brief Deletes an entity from the table.
-         * Also takes care of clearing all the entity's fields and sprite.
-         * The deleted entity will also not be processed anymore by any updater.
+         * Also takes care of clearing all the entity's fields and sprite,
+         * and unsubscribe the entity from all updaters, cached queries and chached apply objects.
          * 
-         * @param e The ID of the entity to delete.
+         * @param e The ID of the entity.
          */
-        void destroy(u32 e)
+        void destroy(entity e)
         {
             unsubscribe(e);
             models.clear(e);
             fixed.clear(e);
             intgs.clear(e);
             bools.clear(e);
-            enums.clear(e);
+            uints.clear(e);
             sprites.clear(e);
             *(_emask + (e >> 5)) &= ~(1 << (e & 31));
             _size--;
             if (e == _used - 1)
                 _used--;
+            if (!_pooled_ids->full())
+                _pooled_ids->push_back(e);
         }
 
 
@@ -159,13 +171,16 @@ namespace esa
          */
         void clear()
         {
-            for (u32 e = 0; e < used(); e++)
-                destroy(e);
+            for (entity e = 0; e < used(); e++)
+            {
+                if (contains(e))
+                    destroy(e);
+            }
         }
 
 
         /**
-         * @brief Tells the total number of entities currently present in the `entity_table`.
+         * @brief Tells the total number of entities currently present in the table.
          * 
          * @return u32
          */
@@ -176,10 +191,8 @@ namespace esa
 
 
         /**
-         * @brief Returns the last row allocated inside the table (last entitiy ID).
-         * Some of the IDs before this might currently be empty.
-         * This function does not give information about the number of
-         * entities currently in the table (use `entity_table::size()` for that).
+         * @brief Returns the last row of the table (last entitiy ID).
+         * In general, it will not coincide with the number of entities in the table.
          * 
          * @return u32 
          */
@@ -190,7 +203,7 @@ namespace esa
 
 
         /**
-         * @brief Tells if this `entity_table` is full (that is, if all entity IDs are taken).
+         * @brief Tells if the table is full (that is, if all entity IDs are used).
          * 
          * @return true 
          * @return false 
@@ -202,229 +215,352 @@ namespace esa
 
 
         /**
-         * @brief Tells if the `entity_table` contains an entity with the specified ID.
+         * @brief Tells if the table contains an entity.
          * 
-         * @param e The ID to check for.
+         * @param e The ID of the entity.
          * @return true 
          * @return false 
          */
-        bool contains(u32 e)
+        bool contains(entity e)
         {
             return (( *(_emask + (e >> 5)) >> (e & 31) ) & 1) == 1;
         }
 
 
         /**
-         * @brief Add an `entity_updater` to the table.
+         * @brief Add an entity updater to the table. Each table can have up to 128 entity updaters.
          * 
-         * @param u A pointer to the `entity_updater`.
+         * @param u A pointer to the entity updater, created using `new`.
          */
-        void add_updater(entity_updater<entity_table<Entities, Models, Fixed, Ints, EntityUpdaters, TableUpdaters>> * u)
+        void add_updater(entity_updater * u)
         {
-            u->require();
-            _entity_updaters.push_back(u);
+            _entity_updaters->push_back(u);
         }
 
 
         /**
-         * @brief Add a `table_updater` to this table.
+         * @brief Add a table updater to this table. Each table can have up to 128 table updaters.
          * 
-         * @param u A pointer to the `table_updater`.
+         * @param u A pointer to the table updater, created using `new`.
          */
-        void add_updater(table_updater<entity_table<Entities, Models, Fixed, Ints, EntityUpdaters, TableUpdaters>> * u)
+        void add_updater(table_updater * u)
         {
-            _table_updaters.push_back(u);
+            _table_updaters->push_back(u);
         }
 
 
         /**
-         * @brief Retrieve an `entity_updater` associated to the table, based on its tag.
+         * @brief Add a cached query to this table. Each table can have up to 128 cached queries.
          * 
-         * @tparam Tag The tag assigned to the `entity_updater`.
-         * @return entity_updater<Table, table_processor<Table, EntityUpdaters, TableUpdaters>>* A pointer to the `entity_updater`
+         * @param q A pointer to the cached_query, created using `new`.
          */
-        template<u32 Tag>
-        entity_updater<entity_table<Entities, Models, Fixed, Ints, EntityUpdaters, TableUpdaters>> * get_entity_updater()
+        void add_query(cached_query * q)
         {
-            for (auto u : _entity_updaters)
+            _cached_queries->push_back(q);
+        }
+
+
+        /**
+         * @brief Add a cached apply to this table. Each table can have up to 128 cached apply.
+         * 
+         * @param q A pointer to the cached apply, created using `new`.
+         */
+        void add_apply(cached_apply * a)
+        {
+            _cached_applys->push_back(a);
+        }
+
+
+        /**
+         * @brief Retrieve an entity updater based on its tag.
+         * 
+         * @tparam Tag The unique tag of the entity updater.
+         * @return entity_updater* A pointer to the entity updater.
+         */
+        template<tag_t Tag>
+        entity_updater * get_entity_updater()
+        {
+            for (auto u : *_entity_updaters)
             {
                 if (u->tag() == Tag)    
                     return u;
             }
+            BN_ASSERT(1 == 2, "ESA ERROR: entity updater not found!");
+            return nullptr;
         }
 
 
         /**
-         * @brief Retrieve a `table_updater` associated to the table, based on its tag.
+         * @brief Retrieve a table updater based on its tag.
          * 
-         * @tparam Tag The tag assigned to the `table_updater`.
-         * @return entity_updater<Table, table_processor<Table, EntityUpdaters, TableUpdaters>>* A pointer to the `table_updater`
+         * @tparam Tag The unique tag of the table updater.
+         * @return table_updater* A pointer to the table updater.
          */
-        template<u32 Tag>
-        table_updater<entity_table<Entities, Models, Fixed, Ints, EntityUpdaters, TableUpdaters>> * get_table_updater()
+        template<tag_t Tag>
+        table_updater * get_table_updater()
         {
-            for (auto u : _table_updaters)
+            for (auto u : *_table_updaters)
             {
                 if (u->tag() == Tag)    
                     return u;
             }
+            BN_ASSERT(1 == 2, "ESA ERROR: table updater not found!");
+            return nullptr;
         }
 
+
         /**
-         * @brief Subscribe an entity to all the relevant `entity_updaters` owned by this table. 
-         * Must be called after having created an entity and having initialized its fields.
+         * @brief Retrieve a cached query based on its tag.
          * 
-         * @param e The ID of the entity to subscribe.
+         * @tparam Tag The unique tag of the cached query.
+         * @return cached_query* A pointer to the cached query.
          */
-        void subscribe(u32 e)
+        template<tag_t Tag>
+        cached_query * get_cached_query()
         {
-            for (auto u : _entity_updaters)
+            for (auto q : *_cached_queries)
             {
-                u->subscribe(e);
+                if (q->tag() == Tag)    
+                    return q;
             }
+            BN_ASSERT(1 == 2, "ESA ERROR: cached query not found!");
+            return nullptr;
         }
 
+
         /**
-         * @brief Unsubscribe an entity from all the `entity_updaters` owned by this `table_processor`.
-         * This is called automatically when `entity_table::desttoy(u32 e)` is used.
+         * @brief Retrieve a cached apply object based on its tag.
          * 
-         * @param e 
+         * @tparam Tag The unique tag of the cached apply object.
+         * @return cached_apply* A pointer to the cached apply object.
          */
-        void unsubscribe(u32 e)
+        template<tag_t Tag>
+        cached_apply * get_cached_apply()
         {
-            for (auto u : _entity_updaters)
+            for (auto a : *_cached_applys)
             {
+                if (a->tag() == Tag)    
+                    return a;
+            }
+            BN_ASSERT(1 == 2, "ESA ERROR: cached apply not found!");
+            return nullptr;
+        }
+
+
+        /**
+         * @brief Subscribe an entity to all entity updaters, cached queries
+         * and cached apply objects.
+         * 
+         * @param e The ID of the entity.
+         * @param model The model of the entity.
+         */
+        void subscribe(entity e, entity_model model)
+        {
+            for (auto u : *_entity_updaters)
+                u->subscribe(e, model);
+            for (auto q : *_cached_queries)
+                q->subscribe(e, model);
+            for (auto a : *_cached_applys)
+                a->subscribe(e, model);
+        }
+        
+
+        /**
+         * @brief Subscribe an entity to all entity updaters, cached queries
+         * and cached apply objects.
+         * 
+         * @param e The ID of the entity.
+         */
+        void subscribe(entity e)
+        {
+            entity_model model = models.get(e);
+            subscribe(e, model);
+        }
+
+
+        /**
+         * @brief Unsubscribe an entity from all entity updaters, cached queries
+         * and cached apply objects.
+         * 
+         * @param e The ID of the entity.
+         */
+        void unsubscribe(entity e)
+        {
+            for (auto u : *_entity_updaters)
                 u->unsubscribe(e);
-            }
+            for (auto q : *_cached_queries)
+                q->unsubscribe(e);
+            for (auto a : *_cached_applys)
+                a->unsubscribe(e);
         }
 
+
         /**
-         * @brief Execute the `init()` function for all the updaters owned by the table.
+         * @brief Execute the `init()` function for all the updaters, cached queries
+         * and cached apply objects.
          * 
          */
         void init()
         {
-            for (auto u : _entity_updaters)
+            for (auto u : *_entity_updaters)
                 u->init();
-            for (auto u : _table_updaters)
+            for (auto u : *_table_updaters)
                 u->init();
+            for (auto q : *_cached_queries)
+                q->init();
+            for (auto a : *_cached_applys)
+                a->init();
         }
 
         /**
-         * @brief Execute the `update()` or `update(u32 e)` function for all the updaters owned by the table.
+         * @brief Execute the `update()` or `update(u32 e)` function for all the updaters.
+         * The processing order is: first, all entity updaters are processed, in order of insertion;
+         * then, all the table updaters are processed, in order of insertion.
          * 
          */
         void update()
         {
-            for (u32 e = 0; e < used(); e++)
+            for (auto u : *_entity_updaters)
             {
-                for (auto u : _entity_updaters)
+                for (entity e = 0; e < used(); e++)
                 {
                     if (u->subscribed(e))
                         u->update(e);
                 }
             }
-            for (auto u : _table_updaters)
+            for (auto u : *_table_updaters)
                 u->update();
         }
 
 
         /**
-         * @brief Run a query to obtain the IDs of the entities processed by a certain `entity_updater`.
+         * @brief Run a cached query on the table.
          * 
-         * @tparam Tag The unique tag of the `entity_updater`.
-         * @tparam Size The expected maximum size of the bn::vector to return.
-         * @param func A pointer to the function implementing the query condition.
-         * @return bn::vector<u32, size> A vector with the IDs of the entities that satisfy the query condition.
+         * @tparam Tag The unique tag of the cached query.
+         * @tparam Size The expected maximum number of entity IDs the query will return.
+         * @return bn::vector<u32, size> A vector with the IDs of the entities that satisfy the query.
          */
-        template<u32 Tag, u32 Size>
-        bn::vector<u32, Size> query()
+        template<tag_t Tag, u32 Size>
+        bn::vector<entity, Size> query()
         {
-            return get_entity_updater<Tag>()->template subscribed<Size>();
+            bn::vector<entity, Size> ids;
+            cached_query * q = get_cached_query<Tag>();
+            
+            for (entity e = 0; e < used(); e++)
+            {
+                if (q->subscribed(e) && q->where(e))
+                    ids.push_back(e);
+            }
+
+            return ids;
         }
 
 
         /**
-         * @brief Run a user defined query on the table.
+         * @brief Run a user defined query function on the table.
          * 
-         * @tparam Size The expected maximum size of the bn::vector to return.
-         * @param func A pointer to the function implementing the query condition.
-         * @return bn::vector<u32, size> A vector with the IDs of the entities that satisfy the query condition.
+         * @tparam Size The expected maximum number of entity IDs the query will return.
+         * @param func A pointer to the function implementing the query.
+         * @return bn::vector<u32, size> A vector with the IDs of the entities that satisfy the query.
          */
         template<u32 Size>
-        bn::vector<u32, Size> query(bool (*func) (entity_table<Entities, Models, Fixed, Ints, EntityUpdaters, TableUpdaters>&, u32))
+        bn::vector<entity, Size> query(bool (*func) (entity_table<Entities, Models, Fixed, Ints>&, entity))
         {
-            bn::vector<u32, Size> ids;
-            for (u32 e = 0; e < used(); e++)
+            bn::vector<entity, Size> ids;
+
+            for (entity e = 0; e < used(); e++)
             {
                 if (contains(e) && (*func)(*this, e))
                     ids.push_back(e);
                 if (ids.size() == Size)
                     break;
             }
+
             return ids;
         }
 
 
         /**
-         * @brief Run a user defined query on the table, passing some extra parameter for dynamic filtering.
+         * @brief Run a user defined query on the table, passing some parameter for dynamic filtering.
          * 
-         * @tparam Size The expected maximum size of the bn::vector to return.
-         * @tparam T The type of the object that will be passed to the query function.
-         * @param func A pointer to the function implementing the query condition.
-         * @param parameters A reference to the object passed as a parameter to the query function.
-         * @return bn::vector<u32, size> A vector with the IDs of the entities that satisfy the query condition.
+         * @tparam Size The expected maximum number of entity IDs the query will return.
+         * @tparam T The type of the parameter passed to the query function.
+         * @param func A pointer to the function implementing the query.
+         * @param parameters The object to pass as a parameter (must be a reference).
+         * @return bn::vector<entity, size> A vector with the IDs of the entities that satisfy the query.
          */
         template<u32 Size, typename T>
-        bn::vector<u32, Size> query(bool (*func) (entity_table<Entities, Models, Fixed, Ints, EntityUpdaters, TableUpdaters>&, u32, T&), T& parameters)
+        bn::vector<entity, Size> query(bool (*func) (entity_table<Entities, Models, Fixed, Ints>&, entity, T&), T& parameters)
         {
-            bn::vector<u32, Size> ids;
-            for (u32 e = 0; e < used(); e++)
+            bn::vector<entity, Size> ids;
+
+            for (entity e = 0; e < used(); e++)
             {
                 if (contains(e) && (*func)(*this, e, parameters))
                     ids.push_back(e);
                 if (ids.size() == Size)
                     break;
             }
+
             return ids;
         }
 
 
         /**
-         * @brief Applies a function to the table, to modify the entities in the table conditionally.
+         * @brief Run a cached apply on the table.
+         * 
+         * @tparam Tag The unique tag of the cached apply.
+         */
+        template<tag_t Tag>
+        void apply()
+        {
+            cached_apply * apply = get_cached_apply<Tag>();
+
+            for (entity e = 0; e < used(); e++)
+            {
+                if (apply->subscribed(e))
+                {
+                    if (apply->apply(e))
+                        break;
+                }
+            }
+        }
+
+
+        /**
+         * @brief Apply a user-defined function iteratively the entire table.
          * 
          * @param func A pointer to the function to apply.
          */
-        void apply(bool (*func) (entity_table<Entities, Models, Fixed, Ints, EntityUpdaters, TableUpdaters>&, u32))
+        void apply(bool (*func) (entity_table<Entities, Models, Fixed, Ints>&, entity))
         {
-            for (u32 e = 0; e < used(); e++)
+            for (entity e = 0; e < used(); e++)
             {
                 if (contains(e))
                 {
                     if ((*func)(*this, e))
                         break;
                 }
-                    
             }
         }
 
 
         /**
-         * @brief Applies a function to the table, to modify the entities in the table conditionally,
-         * passing some extra parameter for dynamic filtering.
+         * @brief Apply a user-defined function iteratively the entire table,
+         * passing some parameter for dynamic behavior.
          * 
-         * @tparam T The type of the object that will be passed to the applied function.
+         * @tparam T The type of the parameter passed to the function.
          * @param func A pointer to the function to be applied.
-         * @param parameters A reference to the object that will be passed as a parameter to the applied function.
+         * @param parameter The object to pass as a parameter (must be a reference).
          */
         template<typename T>
-        void apply(bool (*func) (entity_table<Entities, Models, Fixed, Ints, EntityUpdaters, TableUpdaters>&, u32, T&), T& parameters)
+        void apply(bool (*func) (entity_table<Entities, Models, Fixed, Ints>&, entity, T&), T& parameter)
         {
-            for (u32 e = 0; e < used(); e++)
+            for (entity e = 0; e < used(); e++)
             {
                 if (contains(e))
                 {
-                    if ((*func)(*this, e, parameters))
+                    if ((*func)(*this, e, parameter))
                         break;
                 }
             }
@@ -437,10 +573,20 @@ namespace esa
          */
         ~entity_table()
         {
-            for (u32 i = 0; i < _entity_updaters.size(); i++)
-                delete _entity_updaters[i];
-            for (u32 i = 0; i < _table_updaters.size(); i++)
-                delete _table_updaters[i];
+            for (u32 i = 0; i < _entity_updaters->size(); i++)
+                delete (*_entity_updaters)[i];
+            for (u32 i = 0; i < _table_updaters->size(); i++)
+                delete (*_table_updaters)[i];
+            for (u32 i = 0; i < _cached_queries->size(); i++)
+                delete (*_cached_queries)[i];
+            for (u32 i = 0; i < _cached_applys->size(); i++)
+                delete (*_cached_applys)[i];
+
+            delete _entity_updaters;
+            delete _table_updaters;
+            delete _cached_queries;
+            delete _cached_applys;
+            delete _pooled_ids;
         }
 
     };

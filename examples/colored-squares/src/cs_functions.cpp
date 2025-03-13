@@ -1,7 +1,7 @@
-#include "cs_queries.h"
+#include "cs_functions.h"
 
 
-bool cs::queries::find_red_squares(entity_table& table, u32 e)
+bool cs::functions::find_red_squares(entity_table& table, entity e)
 {
     if (table.models.get(e) == models::RED_SQUARE)
         return true;
@@ -9,9 +9,9 @@ bool cs::queries::find_red_squares(entity_table& table, u32 e)
 }
 
 
-bool cs::queries::find_yellow_squares_within(entity_table& table, u32 e, x_boundaries& boundaries)
+bool cs::functions::find_yellow_squares_within(entity_table& table, entity e, x_boundaries& boundaries)
 {
-    u32 model = table.models.get(e);
+    entity_model model = table.models.get(e);
     bn::fixed x = table.fixed.get<fields::X>(e);
 
     if (model == models::YELLOW_SQUARE && x < boundaries.max && x > boundaries.min)
@@ -21,7 +21,7 @@ bool cs::queries::find_yellow_squares_within(entity_table& table, u32 e, x_bound
 }
 
 
-bool cs::queries::destroy_first_blue_square(entity_table& table, u32 e)
+bool cs::functions::destroy_first_blue_square(entity_table& table, entity e)
 {
     if (table.models.get(e) == models::BLUE_SQUARE)
     {
@@ -32,7 +32,7 @@ bool cs::queries::destroy_first_blue_square(entity_table& table, u32 e)
 }
 
 
-bool cs::queries::incr_blue_squares_velocity(entity_table& table, u32 e)
+bool cs::functions::incr_blue_squares_velocity(entity_table& table, entity e)
 {
     if (table.models.get(e) == models::BLUE_SQUARE)
     {

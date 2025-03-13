@@ -1,13 +1,13 @@
 /**
- * @file esa_entity_updater.h
+ * @file esa_cached_query.h
  * @author nagasella
  * 
  * @copyright Copyright (c) 2025
  * 
  */
 
-#ifndef ESA_ENTITY_UPDATER_H
-#define ESA_ENTITY_UPDATER_H
+#ifndef ESA_CACHED_QUERY_H
+#define ESA_CACHED_QUERY_H
 
 #include "bn_vector.h"
 
@@ -17,17 +17,16 @@ namespace esa
 {
 
     template<typename Table>
-    class entity_updater
+    class cached_query
     {
-
         tag_t _tag;
-        u16 _emask [16];
+        u16 _emask [8];
 
         protected:
 
 
         /**
-         * @brief A reference to the table associated to this updater.
+         * @brief A reference to the table associated to this cached query.
          * 
          */
         Table& table;
@@ -39,19 +38,19 @@ namespace esa
         /**
          * @brief Constructor.
          * 
-         * @param table A reference to the table associated to this updater.
+         * @param table A reference to the table associated to this cached query.
          * @param tag_t A unique tag to assign to this updater.
          */
-        entity_updater(Table& t, tag_t tag) 
+        cached_query(Table& t, tag_t tag)
             : table(t), _tag(tag)
         {
-            for (u16 i = 0; i < 16; i++)
+            for (u16 i = 0; i < 8; i++)
                 *(_emask + i)= 0;
         }
 
 
         /**
-         * @brief Get the unique tag assigned to this updater.
+         * @brief Get the unique tag assigned to this cached query.
          * 
          */
         tag_t tag()
@@ -61,7 +60,7 @@ namespace esa
 
 
         /**
-         * @brief Initialize the updater.
+         * @brief Initialize the cached query.
          * 
          */
         virtual void init()
@@ -82,26 +81,30 @@ namespace esa
 
 
         /**
-         * @brief Update each entity subscribed to this updater 
-         * (the ones that satisfy the `select` clause).
+         * @brief Implements a `where` clause: filters the enetities based
+         * on the values of their fields. This function is executed for each entity
+         * that satisfies the `select` clause. This function should return `true` if the
+         * entity satisfies the query, otherwise `false`.
          * 
          * @param e The ID of the entity.
+         * @return true 
+         * @return false 
          */
-        virtual void update(entity e)
+        virtual bool where(entity e)
         {
-
+            return true;
         }
 
 
         /**
-         * @brief Tells whether this updater currently has no entity.
+         * @brief Tells whether this cached query currently has no subscribed entity.
          * 
          * @return true 
          * @return false 
          */
         bool empty()
         {
-            for (u16 i = 0; i < 16; i++)
+            for (u16 i = 0; i < 8; i++)
             {
                 if ( *(_emask + i) != 0)
                     return false;
@@ -111,7 +114,7 @@ namespace esa
 
 
         /**
-         * @brief Subscribe an entity to this udpater, if applicable. 
+         * @brief Subscribe an entity to this cached query, if applicable.
          * 
          * @param e The ID of the entity.
          */
@@ -123,7 +126,7 @@ namespace esa
 
 
         /**
-         * @brief Unsubscribe an entity from this updater. 
+         * @brief Unsubscribe an entity from this cached query.
          * 
          * @param e The ID of the entity.
          */
@@ -134,7 +137,7 @@ namespace esa
 
 
         /**
-         * @brief Tells if an entity is currently subscribed to this updater.
+         * @brief Tells if an entity is currently subscribed to this cached query.
          * 
          * @param e The ID of the entity.
          * @return true 
@@ -150,7 +153,7 @@ namespace esa
          * @brief Destructor.
          * 
          */
-        virtual ~entity_updater() = default;
+        virtual ~cached_query() = default;
 
     };
 

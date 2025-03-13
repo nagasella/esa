@@ -6,13 +6,12 @@ cs::u_movement::u_movement(entity_table& t) :
     
 }
 
-void cs::u_movement::require()
+bool cs::u_movement::select(entity_model model)
 {
-    // This updater will process only entities that have X, Y VX and VY fields
-    require_fixed<fields::X>();
-    require_fixed<fields::Y>();
-    require_fixed<fields::VX>();
-    require_fixed<fields::VY>();
+    return table.fixed.has<fields::X>(model)
+        && table.fixed.has<fields::Y>(model)
+        && table.fixed.has<fields::VX>(model)
+        && table.fixed.has<fields::VY>(model);
 }
 
 void cs::u_movement::init()
@@ -20,7 +19,7 @@ void cs::u_movement::init()
 
 }
 
-void cs::u_movement::update(u32 e)
+void cs::u_movement::update(entity e)
 {
     // read the fields
     bn::fixed x = table.fixed.get<fields::X>(e);

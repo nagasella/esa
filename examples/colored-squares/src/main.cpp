@@ -10,6 +10,7 @@
 #include "cs_u_visibility.h"
 #include "cs_u_entity_manager.h"
 #include "cs_u_animation.h"
+#include "cs_q_rotation.h"
 
 using namespace cs;
 
@@ -25,7 +26,7 @@ int main()
     table.fixed.add<models::RED_SQUARE, fields::Y>();
     table.fixed.add<models::RED_SQUARE, fields::VX>();
     table.fixed.add<models::RED_SQUARE, fields::VY>();
-    table.enums.add<models::RED_SQUARE, fields::SCALE, fields::SCALE_SZ>();
+    table.uints.add<models::RED_SQUARE, fields::SCALE, fields::SCALE_SZ>();
 
     table.fixed.add<models::BLUE_SQUARE, fields::X>();
     table.fixed.add<models::BLUE_SQUARE, fields::Y>();
@@ -39,26 +40,25 @@ int main()
     table.fixed.add<models::YELLOW_SQUARE, fields::VX>();
     table.fixed.add<models::YELLOW_SQUARE, fields::VY>();
     table.intgs.add<models::YELLOW_SQUARE, fields::ANGLE>();
-    table.enums.add<models::YELLOW_SQUARE, fields::SCALE, fields::SCALE_SZ>();
+    table.uints.add<models::YELLOW_SQUARE, fields::SCALE, fields::SCALE_SZ>();
 
     table.fixed.add<models::FLASHING_SQUARE, fields::X>();
     table.fixed.add<models::FLASHING_SQUARE, fields::Y>();
     table.fixed.add<models::FLASHING_SQUARE, fields::VX>();
     table.fixed.add<models::FLASHING_SQUARE, fields::VY>();
-    table.intgs.add<models::FLASHING_SQUARE, fields::ANGLE>();
-    table.enums.add<models::FLASHING_SQUARE, fields::SCALE, fields::SCALE_SZ>();
-    table.enums.add<models::FLASHING_SQUARE, fields::ANIM_CURR, fields::ANIM_CURR_SZ>();
-    table.enums.add<models::FLASHING_SQUARE, fields::ANIM_FIRST, fields::ANIM_FIRST_SZ>();
-    table.enums.add<models::FLASHING_SQUARE, fields::ANIM_LAST, fields::ANIM_LAST_SZ>();
-    table.enums.add<models::FLASHING_SQUARE, fields::ANIM_TIMER, fields::ANIM_TIMER_SZ>();
+    table.uints.add<models::FLASHING_SQUARE, fields::ANIM_CURR, fields::ANIM_CURR_SZ>();
+    table.uints.add<models::FLASHING_SQUARE, fields::ANIM_FIRST, fields::ANIM_FIRST_SZ>();
+    table.uints.add<models::FLASHING_SQUARE, fields::ANIM_LAST, fields::ANIM_LAST_SZ>();
+    table.uints.add<models::FLASHING_SQUARE, fields::ANIM_TIMER, fields::ANIM_TIMER_SZ>();
 
-    // Set up all the updaters
+    // Set up all the updaters, cached queries, cahced applys...
     table.add_updater(new u_movement(table));
     table.add_updater(new u_rotation(table));
     table.add_updater(new u_visibility(table));
     table.add_updater(new u_scaling(table));
     table.add_updater(new u_animation(table));
     table.add_updater(new u_entity_manager(table));
+    table.add_query(new q_rotation(table));
 
     // Initialize all the updaters
     table.init();

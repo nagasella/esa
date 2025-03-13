@@ -10,13 +10,12 @@ cs::u_animation::u_animation(entity_table& t) :
     
 }
 
-void cs::u_animation::require()
+bool cs::u_animation::select(entity_model model)
 {
-    // This updater will process only entities that have animation related fields
-    require_enum<fields::ANIM_CURR, fields::ANIM_CURR_SZ>();
-    require_enum<fields::ANIM_FIRST, fields::ANIM_FIRST_SZ>();
-    require_enum<fields::ANIM_LAST, fields::ANIM_LAST_SZ>();
-    require_enum<fields::ANIM_TIMER, fields::ANIM_TIMER_SZ>();
+    return table.uints.has<fields::ANIM_CURR, fields::ANIM_CURR_SZ>(model)
+        && table.uints.has<fields::ANIM_FIRST, fields::ANIM_FIRST_SZ>(model)
+        && table.uints.has<fields::ANIM_LAST, fields::ANIM_LAST_SZ>(model)
+        && table.uints.has<fields::ANIM_TIMER, fields::ANIM_TIMER_SZ>(model);
 }
 
 void cs::u_animation::init()
@@ -24,13 +23,13 @@ void cs::u_animation::init()
 
 }
 
-void cs::u_animation::update(u32 e)
+void cs::u_animation::update(entity e)
 {
     // get the value of the fields for the entity
-    u32 curr  = table.enums.get<fields::ANIM_CURR, fields::ANIM_CURR_SZ>(e);
-    u32 first = table.enums.get<fields::ANIM_FIRST, fields::ANIM_FIRST_SZ>(e);
-    u32 last  = table.enums.get<fields::ANIM_LAST, fields::ANIM_LAST_SZ>(e);
-    u32 timer = table.enums.get<fields::ANIM_TIMER, fields::ANIM_TIMER_SZ>(e);
+    uintn_t curr  = table.uints.get<fields::ANIM_CURR, fields::ANIM_CURR_SZ>(e);
+    uintn_t first = table.uints.get<fields::ANIM_FIRST, fields::ANIM_FIRST_SZ>(e);
+    uintn_t last  = table.uints.get<fields::ANIM_LAST, fields::ANIM_LAST_SZ>(e);
+    uintn_t timer = table.uints.get<fields::ANIM_TIMER, fields::ANIM_TIMER_SZ>(e);
 
     // update animation timer and current animation index
     if (timer > 0)
@@ -49,7 +48,7 @@ void cs::u_animation::update(u32 e)
         table.sprites.get(e).set_tiles(bn::sprite_items::squares.tiles_item(), curr);
     
     // update the fields
-    table.enums.set<fields::ANIM_CURR, fields::ANIM_CURR_SZ>(e, curr);
-    table.enums.set<fields::ANIM_TIMER, fields::ANIM_TIMER_SZ>(e, timer);
+    table.uints.set<fields::ANIM_CURR, fields::ANIM_CURR_SZ>(e, curr);
+    table.uints.set<fields::ANIM_TIMER, fields::ANIM_TIMER_SZ>(e, timer);
 
 }

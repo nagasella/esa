@@ -34,7 +34,9 @@ Below is a basic introduction to Entity Systems, as well as a comprehensive tuto
 
 [14. Apply](#apply)
 
-[15. Memory allocation of ESA objects](#memory-allocation-of-esa-objects)
+[15. Boosting performance with ARM code](#boosting-performance-with-arm-code)
+
+[16. Memory allocation of ESA objects](#memory-allocation-of-esa-objects)
 
 
 ## An introduction to Entity Systems
@@ -357,7 +359,7 @@ table.uints.has<FIELD, FIELD_SIZE>(model);
 In fact, it is possible to create any arbitrarily complex filter, such as:
 
 ```cpp
-bool filter(esa::entity_model model) override
+bool select(esa::entity_model model) override
 {
     return (table.fixed.has<FIELD_1>(model) || table.ingts.has<FIELD_2>(model))
         && !table.uints.has<FIELD_3, FIELD_3_SIZE>(model)
@@ -582,7 +584,7 @@ table.apply(&cs::functions::destroy_first_blue_square);
 
 A cached apply is defined like a cached query, but the member function to overload is `esa::cached_apply::apply` instead of `esa::cached_apply::where`. The `apply` member function should return `true` if the `apply` execution needs to stop, otherwise `false`.
 
-### A warning about using `apply`
+### A warning about `apply`
 
 As a general note, it is better to avoid the abuse of the `apply` function: most of the logic of the game should sit inside the entity updaters, and `apply` should be only used in very specific instances, for example to trigger a certain event on many entities at a specific moment in the game. 
 
@@ -615,6 +617,90 @@ void my_updater::update(esa::entity e)
 ```
 
 Like this, we will avoid overwriting the value of the field `X` after the execution of `apply`.
+
+## Boosting performance with ARM code
+
+If you feel like you need some performance boost, often a good idea is to compile some of your code in ARM instructions and store it in IWRAM (by default code is compiled as Thumb and stored in ROM). Butano allows to generate ARM code in IWRAM by using the macro `BN_CODE_IWRAM` (check [this](https://gvaliente.github.io/butano/faq.html#faq_memory_arm_iwram) out in the butano FAQ). We can apply this principle to updaters, queries and apply objects.
+
+For example, take the scenegraph updater in the `tiny-galaxy` example project. We could change its header file `tg_u_scenegraph.h` as follows:
+
+```cpp
+#ifndef TG_U_SCENEGRAPH_H
+#define TG_U_SCENEGRAPH_H
+
+#include "tg_definitions.h"
+
+namespace tg
+{
+    class u_scenegraph : public entity_updater
+    {
+        public:
+
+        u_scenegraph(entity_table & t);
+        bool select(entity_model model) override;
+        void init() override;
+        BN_CODE_IWRAM void update(entity e) override; // marked as IWRAM code
+    };
+}
+
+#endif
+```
+
+Then, we can implement in `tg_u_scenegraph.cpp` all functions apart from the `update` function:
+
+```cpp
+#include "tg_u_scenegraph.h"
+
+tg::u_scenegraph::u_scenegraph(entity_table & t)
+    : entity_updater::entity_updater(t, tags::SCENEGRAPH)
+{
+
+}
+
+bool tg::u_scenegraph::select(entity_model model)
+{
+    return table.uints.has<fields::PARENT, fields::PARENT_SZ>(model)
+        && table.fixed.has<fields::X>(model)
+        && table.fixed.has<fields::Y>(model);
+}
+
+void tg::u_scenegraph::init()
+{
+
+}
+```
+
+And finally we can implement the `update` function in a file named `tg_u_scenegraph.iwram.cpp` (which should also be in the `src` folder):
+
+```cpp
+#include "tg_u_scenegraph.h"
+
+void tg::u_scenegraph::update(entity e)
+{
+    // entity fields
+    bn::fixed x = table.fixed.get<fields::X>(e);
+    bn::fixed y = table.fixed.get<fields::Y>(e);
+    uintn_t parent = table.uints.get<fields::PARENT, fields::PARENT_SZ>(e);
+
+    // resolve the scengraph to get the absolute position of each entity
+    entity_model parent_model = table.models.get(parent);
+    while (true)
+    {
+        x += table.fixed.get<fields::X>(parent);
+        y += table.fixed.get<fields::Y>(parent);
+        parent = table.uints.get<fields::PARENT, fields::PARENT_SZ>(parent);
+        parent_model = table.models.get(parent);
+        if (!table.uints.has<fields::PARENT, fields::PARENT_SZ>(parent_model))
+            break;
+    }
+
+    // the entity's sprite position will be the absolute position on screen
+    table.sprites.get(e).set_x(x);
+    table.sprites.get(e).set_y(y);
+}
+```
+
+This will give us some performance boost compared to the all-thumb implementation. The same principle can be applied to table updaters, cached queries and cached apply objects.
 
 ## Memory allocation of ESA objects
 

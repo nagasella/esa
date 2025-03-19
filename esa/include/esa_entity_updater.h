@@ -115,9 +115,9 @@ namespace esa
          * 
          * @param e The ID of the entity.
          */
-        void subscribe(entity e, entity_model model)
+        void subscribe(entity e)
         {
-            if (select(model))
+            if (select(table.models.get(e)))
                 *(_emask + (e >> 4)) |= (1 << (e & 15));
         }
 

@@ -134,8 +134,11 @@ namespace esa
             _size++;
             if (e == _used)
                 _used++;
+
             models.template add<Model>(e);
-            subscribe(e, Model);
+            
+            subscribe(e);
+
             return e;
         }
 
@@ -345,24 +348,6 @@ namespace esa
             BN_ASSERT(1 == 2, "ESA ERROR: cached apply not found!");
             return nullptr;
         }
-
-
-        /**
-         * @brief Subscribe an entity to all entity updaters, cached queries
-         * and cached apply objects.
-         * 
-         * @param e The ID of the entity.
-         * @param model The model of the entity.
-         */
-        void subscribe(entity e, entity_model model)
-        {
-            for (auto u : *_entity_updaters)
-                u->subscribe(e, model);
-            for (auto q : *_cached_queries)
-                q->subscribe(e, model);
-            for (auto a : *_cached_applys)
-                a->subscribe(e, model);
-        }
         
 
         /**
@@ -373,8 +358,12 @@ namespace esa
          */
         void subscribe(entity e)
         {
-            entity_model model = models.get(e);
-            subscribe(e, model);
+            for (auto u : *_entity_updaters)
+                u->subscribe(e);
+            for (auto q : *_cached_queries)
+                q->subscribe(e);
+            for (auto a : *_cached_applys)
+                a->subscribe(e);
         }
 
 

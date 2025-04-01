@@ -5,7 +5,6 @@
 
 #include "bn_regular_bg_ptr.h"
 
-
 namespace tg
 {
     class u_background : public table_updater
@@ -14,11 +13,10 @@ namespace tg
 
         public:
 
-        u_background(entity_table & t);
+        u_background();
         void init() override;
         void update() override;
     };
 }
-
 
 #endif

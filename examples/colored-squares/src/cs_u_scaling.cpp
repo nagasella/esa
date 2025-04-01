@@ -4,14 +4,15 @@
 
 
 cs::u_scaling::u_scaling(entity_table& t) :
-    entity_updater::entity_updater(t, tags::SCALING)
+    entity_updater::entity_updater(tags::SCALING),
+    table(t)
 {
     
 }
 
-bool cs::u_scaling::select(entity_model model)
+bool cs::u_scaling::select(entity e)
 {
-    return table.uints.has<fields::SCALE, fields::SCALE_SZ>(model);
+    return table.has<tags::SCALE>(e);
 }
 
 void cs::u_scaling::init()
@@ -21,10 +22,9 @@ void cs::u_scaling::init()
 
 void cs::u_scaling::update(entity e)
 {
-    // read the fields
-    uintn_t scale = table.uints.get<fields::SCALE, fields::SCALE_SZ>(e);
+    sprite & spr = table.get<sprite, tags::SPRITE>(e);
+    int & scale = table.get<int, tags::SCALE>(e);
 
-    // modify the scale
     if (bn::keypad::a_pressed())
     {
         if (scale < 3)
@@ -33,10 +33,6 @@ void cs::u_scaling::update(entity e)
             scale = 1;
     }
 
-    // apply to sprite
-    if (table.sprites.has(e))
-        table.sprites.get(e).set_scale((bn::fixed) 1 / scale);
-
-    // update the fields
-    table.uints.set<fields::SCALE, fields::SCALE_SZ>(e, scale);
+    if (spr.has_value())
+        spr.value().set_scale((bn::fixed) 1 / scale);
 }

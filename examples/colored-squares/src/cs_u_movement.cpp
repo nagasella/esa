@@ -1,17 +1,16 @@
 #include "cs_u_movement.h"
 
 cs::u_movement::u_movement(entity_table& t) :
-    entity_updater::entity_updater(t, tags::MOVEMENT)
+    entity_updater::entity_updater(tags::MOVEMENT),
+    table(t)
 {
     
 }
 
-bool cs::u_movement::select(entity_model model)
+bool cs::u_movement::select(entity e)
 {
-    return table.fixed.has<fields::X>(model)
-        && table.fixed.has<fields::Y>(model)
-        && table.fixed.has<fields::VX>(model)
-        && table.fixed.has<fields::VY>(model);
+    return table.has<tags::POSITION>(e)
+        && table.has<tags::VELOCITY>(e);
 }
 
 void cs::u_movement::init()
@@ -21,49 +20,38 @@ void cs::u_movement::init()
 
 void cs::u_movement::update(entity e)
 {
-    // read the fields
-    bn::fixed x = table.fixed.get<fields::X>(e);
-    bn::fixed y = table.fixed.get<fields::Y>(e);
-    bn::fixed vx = table.fixed.get<fields::VX>(e);
-    bn::fixed vy = table.fixed.get<fields::VY>(e);
+    sprite & spr   = table.get<sprite, tags::SPRITE>(e);
+    position & pos = table.get<position, tags::POSITION>(e);
+    velocity & vel = table.get<velocity, tags::VELOCITY>(e);
 
-    // modify the fields
-    x += vx;
-    y += vy;
+    pos.x += vel.x;
+    pos.y += vel.y;
 
-    // bounce off screen
-    if (x < -120)
+    if (pos.x < -120)
     {
-        x = -120;
-        vx *= -1;
+        pos.x = -120;
+        vel.x *= -1;
     }
-    else if (x > 120)
+    else if (pos.x > 120)
     {
-        x = 120;
-        vx *= -1;
+        pos.x = 120;
+        vel.x *= -1;
     }
     
-    if (y < -80)
+    if (pos.y < -80)
     {
-        y = -80;
-        vy *= -1;
+        pos.y = -80;
+        vel.y *= -1;
     }
-    else if (y > 80)
+    else if (pos.y > 80)
     {
-        y = 80;
-        vy *= -1;
-    }
-
-    // sprite position
-    if (table.sprites.has(e))
-    {
-        table.sprites.get(e).set_x(x);
-        table.sprites.get(e).set_y(y);
+        pos.y = 80;
+        vel.y *= -1;
     }
 
-    // update the fields
-    table.fixed.set<fields::X>(e, x);
-    table.fixed.set<fields::Y>(e, y);
-    table.fixed.set<fields::VX>(e, vx);
-    table.fixed.set<fields::VY>(e, vy);
+    if (spr.has_value())
+    {
+        spr.value().set_x(pos.x);
+        spr.value().set_y(pos.y);
+    }
 }

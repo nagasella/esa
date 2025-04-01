@@ -1,66 +1,56 @@
-/**
- * @file esa_cached_query.h
- * @author nagasella
- * 
- * @copyright Copyright (c) 2025
- * 
- */
-
 #ifndef ESA_CACHED_QUERY_H
 #define ESA_CACHED_QUERY_H
 
-#include "bn_vector.h"
-
 #include "esa.h"
+
 
 namespace esa
 {
-
-    template<typename Table>
+    
+    template<uint32_t Entities>
     class cached_query
     {
+        /**
+         * @brief Unique tag.
+         * 
+         */
         tag_t _tag;
-        u16 _emask [8];
-
-        protected:
 
 
         /**
-         * @brief A reference to the table associated to this cached query.
+         * @brief The IDs of the entities this query processes.
          * 
          */
-        Table& table;
+        vector<entity, Entities> _entities;
 
 
+        protected:
+
+        
         public:
-
 
         /**
          * @brief Constructor.
          * 
-         * @param table A reference to the table associated to this cached query.
-         * @param tag_t A unique tag to assign to this updater.
          */
-        cached_query(Table& t, tag_t tag)
-            : table(t), _tag(tag)
+        cached_query(tag_t tag)
         {
-            for (u16 i = 0; i < 8; i++)
-                *(_emask + i)= 0;
+            _tag = tag;
         }
 
 
         /**
-         * @brief Get the unique tag assigned to this cached query.
+         * @brief Filter entities processed by this query based on their components.
          * 
          */
-        tag_t tag()
+        [[nodiscard]] virtual bool select(entity e)
         {
-            return _tag;
+            return false;
         }
 
 
         /**
-         * @brief Initialize the cached query.
+         * @brief Initialization.
          * 
          */
         virtual void init()
@@ -70,94 +60,79 @@ namespace esa
 
 
         /**
-         * @brief Implements a `select` clause: filters the entities
-         * based on their model or fields.
+         * @brief Find entities that satisfy a condtion.
          * 
          */
-        virtual bool select(entity_model model)
-        {
-
-        }
-
-
-        /**
-         * @brief Implements a `where` clause: filters the enetities based
-         * on the values of their fields. This function is executed for each entity
-         * that satisfies the `select` clause. This function should return `true` if the
-         * entity satisfies the query, otherwise `false`.
-         * 
-         * @param e The ID of the entity.
-         * @return true 
-         * @return false 
-         */
-        virtual bool where(entity e)
+        [[nodiscard]] virtual bool where(entity e)
         {
             return true;
         }
 
-
+        
         /**
-         * @brief Tells whether this cached query currently has no subscribed entity.
+         * @brief Returns the unique tag associated to the query.
          * 
-         * @return true 
-         * @return false 
+         * @return tag_t 
          */
-        bool empty()
+        [[nodiscard]] tag_t tag()
         {
-            for (u16 i = 0; i < 8; i++)
-            {
-                if ( *(_emask + i) != 0)
-                    return false;
-            }
-            return true;
+            return _tag;
         }
 
 
         /**
-         * @brief Subscribe an entity to this cached query, if applicable.
+         * @brief Subscribe the entity to the cached query.
          * 
-         * @param e The ID of the entity.
          */
         void subscribe(entity e)
         {
-            if (select(table.models.get(e)))
-                *(_emask + (e >> 4)) |= (1 << (e & 15));
+            for (auto ent : _entities)
+            {
+                if (ent == e)
+                    return;
+            }
+            if (select(e))
+                _entities.push_back(e);
         }
 
 
         /**
-         * @brief Unsubscribe an entity from this cached query.
+         * @brief Unsubscribe the entity from the cached query.
          * 
-         * @param e The ID of the entity.
          */
         void unsubscribe(entity e)
         {
-            *(_emask + (e >> 4)) &= ~(1 << (e & 15));
+            for (uint32_t i = 0; i < _entities.size(); i++)
+            {
+                if (_entities[i] == e)
+                {
+                    _entities.erase(i);
+                    break;
+                }
+            }
         }
 
 
         /**
-         * @brief Tells if an entity is currently subscribed to this cached query.
+         * @brief Returns a vector with the IDs of the entities processed by this query.
          * 
-         * @param e The ID of the entity.
-         * @return true 
-         * @return false 
+         * @return vector<entity, Entities> 
          */
-        bool subscribed(entity e)
+        [[nodiscard]] vector<entity, Entities> entities()
         {
-            return (( *(_emask + (e >> 4)) >> (e & 15)) & 1) == 1; 
+            return _entities;
         }
 
 
         /**
-         * @brief Destructor.
+         * @brief Virtual destructor.
          * 
          */
         virtual ~cached_query() = default;
 
     };
 
-
 }
+
 
 #endif

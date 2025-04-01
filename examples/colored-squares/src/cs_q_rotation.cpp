@@ -1,14 +1,15 @@
 #include "cs_q_rotation.h"
 
 cs::q_rotation::q_rotation(entity_table& t) :
-    cached_query::cached_query(t, tags::QRY_ROTATION)
+    cached_query::cached_query(tags::QRY_ROTATION),
+    table(t)
 {
     
 }
 
-bool cs::q_rotation::select(entity_model model)
+bool cs::q_rotation::select(entity e)
 {
-    return table.intgs.has<fields::ANGLE>(model);
+    return table.has<tags::ANGLE>(e);
 }
 
 void cs::q_rotation::init()
@@ -18,8 +19,7 @@ void cs::q_rotation::init()
 
 bool cs::q_rotation::where(entity e)
 {
-    if (table.intgs.get<fields::ANGLE>(e) > 180)
+    if (table.get<int, tags::ANGLE>(e) > 180)
         return true;
-        
     return false;
 }

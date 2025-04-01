@@ -7,6 +7,8 @@ namespace cs
 {
     class u_entity_manager : public table_updater
     {
+        entity_table & table;
+        
         public:
 
         u_entity_manager(entity_table& t);
@@ -14,6 +16,5 @@ namespace cs
         void update() override;
     };
 }
-
 
 #endif

@@ -1,66 +1,53 @@
-/**
- * @file esa_cached_apply.h
- * @author nagasella
- * 
- * @copyright Copyright (c) 2025
- * 
- */
-
 #ifndef ESA_CACHED_APPLY_H
 #define ESA_CACHED_APPLY_H
 
-#include "bn_vector.h"
-
 #include "esa.h"
+
 
 namespace esa
 {
-
-    template<typename Table>
+    
+    template<uint32_t Entities>
     class cached_apply
     {
+        /**
+         * @brief Unique tag.
+         * 
+         */
         tag_t _tag;
-        u16 _emask [16];
-
-        protected:
 
 
         /**
-         * @brief A reference to the table associated to this updater.
+         * @brief The IDs of the entities this apply processes.
          * 
          */
-        Table& table;
+        vector<entity, Entities> _entities;
 
-
+        
         public:
-
 
         /**
          * @brief Constructor.
          * 
-         * @param table A reference to the table associated to this updater.
-         * @param tag_t A unique tag to assign to this updater.
          */
-        cached_apply(Table& t, tag_t tag) 
-            : table(t), _tag(tag)
+        cached_apply(tag_t tag)
         {
-            for (u16 i = 0; i < 16; i++)
-                *(_emask + i)= 0;
+            _tag = tag;
         }
 
 
         /**
-         * @brief Get the unique tag of this updater.
+         * @brief Filter entities processed by this apply based on their components.
          * 
          */
-        tag_t tag()
+        [[nodiscard]] virtual bool select(entity e)
         {
-            return _tag;
+            return false;
         }
 
 
         /**
-         * @brief Initialize the updater.
+         * @brief Initialization.
          * 
          */
         virtual void init()
@@ -70,94 +57,79 @@ namespace esa
 
 
         /**
-         * @brief Implements a `select` clause: filters the entities
-         * based on their model or fields.
+         * @brief Modify entities that satisfy a condtion.
          * 
          */
-        virtual bool select(entity_model model)
-        {
-
-        }
-
-
-        /**
-         * @brief Applies the content of this function to all entities
-         * that satisfy the `select` clause. This function should return `true` if
-         * the execution of the apply needs to be interrupted at the current entity ID,
-         * otherwise `false`.
-         * 
-         * @param e The ID of each entity.
-         * @return true 
-         * @return false 
-         */
-        virtual bool apply(entity e)
+        [[nodiscrard]] virtual bool apply(entity e)
         {
             return true;
         }
 
-
+        
         /**
-         * @brief Tells whether this cached apply currently has no subscribed entity.
+         * @brief Returns the unique tag associated to the apply.
          * 
-         * @return true 
-         * @return false 
+         * @return tag_t 
          */
-        bool empty()
+        [[nodiscard]] tag_t tag()
         {
-            for (u16 i = 0; i < 16; i++)
-            {
-                if ( *(_emask + i) != 0)
-                    return false;
-            }
-            return true;
+            return _tag;
         }
 
 
         /**
-         * @brief Subscribe an entity to this cached apply, if applicable.
+         * @brief Subscribe the entity to the cached apply object.
          * 
-         * @param e The ID of the entity.
          */
         void subscribe(entity e)
         {
-            if (select(table.models.get(e)))
-                *(_emask + (e >> 4)) |= (1 << (e & 15));
+            for (auto ent : _entities)
+            {
+                if (ent == e)
+                    return;
+            }
+            if (select(e))
+                _entities.push_back(e);
         }
 
 
         /**
-         * @brief Unsubscribe an entity from this cached apply.
+         * @brief Unsubscribe the entity from the cached apply object.
          * 
-         * @param e The ID of the entity.
          */
         void unsubscribe(entity e)
         {
-            *(_emask + (e >> 4)) &= ~(1 << (e & 15));
+            for (uint32_t i = 0; i < _entities.size(); i++)
+            {
+                if (_entities[i] == e)
+                {
+                    _entities.erase(i);
+                    break;
+                }
+            }
         }
 
 
         /**
-         * @brief Tells if an entity is currently subscribed to this cached apply.
+         * @brief Returns a vector with the IDs of the entities processed by this apply.
          * 
-         * @param e The ID of the entity.
-         * @return true 
-         * @return false 
+         * @return vector<entity, Entities> 
          */
-        bool subscribed(entity e)
+        [[nodiscard]] vector<entity, Entities> entities()
         {
-            return (( *(_emask + (e >> 4)) >> (e & 15)) & 1) == 1; 
+            return _entities;
         }
 
 
         /**
-         * @brief Destructor.
+         * @brief Virtual destructor.
          * 
          */
         virtual ~cached_apply() = default;
 
     };
 
-
 }
+
 
 #endif

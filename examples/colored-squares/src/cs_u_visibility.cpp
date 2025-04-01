@@ -5,14 +5,15 @@
 
 
 cs::u_visibility::u_visibility(entity_table& t) :
-    entity_updater::entity_updater(t, tags::VISIBILITY)
+    entity_updater::entity_updater(tags::VISIBILITY),
+    table(t)
 {
     
 }
 
-bool cs::u_visibility::select(entity_model model)
+bool cs::u_visibility::select(entity e)
 {
-    return table.bools.has<fields::VISIBLE>(model);
+    return table.has<tags::VISIBLE>(e);
 }
 
 void cs::u_visibility::init()
@@ -22,27 +23,22 @@ void cs::u_visibility::init()
 
 void cs::u_visibility::update(entity e)
 {
-    // read the fields
-    bool visible = table.bools.get<fields::VISIBLE>(e);
+    sprite & spr   = table.get<sprite, tags::SPRITE>(e);
+    bool & visible = table.get<bool, tags::VISIBLE>(e);
 
-    // modify the fields
     if (bn::keypad::b_pressed())
     {
         if (visible)
         {
-            table.sprites.clear(e);
+            spr.reset();
             visible = false;
         }
         else
         {
-            bn::fixed x = table.fixed.get<fields::X>(e);
-            bn::fixed y = table.fixed.get<fields::Y>(e);
-            table.sprites.set(e, bn::sprite_items::squares.create_sprite(x, y));
-            table.sprites.get(e).set_tiles(bn::sprite_items::squares.tiles_item(), 1);
+            position & pos = table.get<position, tags::POSITION>(e);
+            spr = bn::sprite_items::squares.create_sprite(pos.x, pos.y);
+            spr.value().set_tiles(bn::sprite_items::squares.tiles_item(), 1);
             visible = true;
         }
     }
-
-    // update the fields
-    table.bools.set<fields::VISIBLE>(e, visible);
 }

@@ -18,40 +18,20 @@ int main()
 {
     bn::core::init();
 
-    // Define an entity table
+    // define an entity table
     entity_table table;
 
-    // Define all the entity models
-    table.fixed.add<models::RED_SQUARE, fields::X>();
-    table.fixed.add<models::RED_SQUARE, fields::Y>();
-    table.fixed.add<models::RED_SQUARE, fields::VX>();
-    table.fixed.add<models::RED_SQUARE, fields::VY>();
-    table.uints.add<models::RED_SQUARE, fields::SCALE, fields::SCALE_SZ>();
+    // set up available components
+    table.add_component<position>(tags::POSITION);
+    table.add_component<velocity>(tags::VELOCITY);
+    table.add_component<sprite>(tags::SPRITE);
+    table.add_component<color>(tags::COLOR);
+    table.add_component<int>(tags::SCALE);
+    table.add_component<int>(tags::ANGLE);
+    table.add_component<bool>(tags::VISIBLE);
+    table.add_component<uint_set>(tags::ANIM_SET);
 
-    table.fixed.add<models::BLUE_SQUARE, fields::X>();
-    table.fixed.add<models::BLUE_SQUARE, fields::Y>();
-    table.fixed.add<models::BLUE_SQUARE, fields::VX>();
-    table.fixed.add<models::BLUE_SQUARE, fields::VY>();
-    table.intgs.add<models::BLUE_SQUARE, fields::ANGLE>();
-    table.bools.add<models::BLUE_SQUARE, fields::VISIBLE>();
-
-    table.fixed.add<models::YELLOW_SQUARE, fields::X>();
-    table.fixed.add<models::YELLOW_SQUARE, fields::Y>();
-    table.fixed.add<models::YELLOW_SQUARE, fields::VX>();
-    table.fixed.add<models::YELLOW_SQUARE, fields::VY>();
-    table.intgs.add<models::YELLOW_SQUARE, fields::ANGLE>();
-    table.uints.add<models::YELLOW_SQUARE, fields::SCALE, fields::SCALE_SZ>();
-
-    table.fixed.add<models::FLASHING_SQUARE, fields::X>();
-    table.fixed.add<models::FLASHING_SQUARE, fields::Y>();
-    table.fixed.add<models::FLASHING_SQUARE, fields::VX>();
-    table.fixed.add<models::FLASHING_SQUARE, fields::VY>();
-    table.uints.add<models::FLASHING_SQUARE, fields::ANIM_CURR, fields::ANIM_CURR_SZ>();
-    table.uints.add<models::FLASHING_SQUARE, fields::ANIM_FIRST, fields::ANIM_FIRST_SZ>();
-    table.uints.add<models::FLASHING_SQUARE, fields::ANIM_LAST, fields::ANIM_LAST_SZ>();
-    table.uints.add<models::FLASHING_SQUARE, fields::ANIM_TIMER, fields::ANIM_TIMER_SZ>();
-
-    // Set up all the updaters, cached queries, cahced applys...
+    // set up all the updaters, cached queries...
     table.add_updater(new u_movement(table));
     table.add_updater(new u_rotation(table));
     table.add_updater(new u_visibility(table));
@@ -60,10 +40,10 @@ int main()
     table.add_updater(new u_entity_manager(table));
     table.add_query(new q_rotation(table));
 
-    // Initialize all the updaters
+    // initialize all the updaters
     table.init();
 
-    // Add 4 entities
+    // add 4 entities
     entities::red_square(table);
     entities::blue_square(table);
     entities::yellow_square(table);

@@ -5,17 +5,15 @@
 
 
 cs::u_animation::u_animation(entity_table& t) :
-    entity_updater::entity_updater(t, tags::ANIMATION)
+    entity_updater::entity_updater(tags::ANIMATION),
+    table(t)
 {
     
 }
 
-bool cs::u_animation::select(entity_model model)
+bool cs::u_animation::select(entity e)
 {
-    return table.uints.has<fields::ANIM_CURR, fields::ANIM_CURR_SZ>(model)
-        && table.uints.has<fields::ANIM_FIRST, fields::ANIM_FIRST_SZ>(model)
-        && table.uints.has<fields::ANIM_LAST, fields::ANIM_LAST_SZ>(model)
-        && table.uints.has<fields::ANIM_TIMER, fields::ANIM_TIMER_SZ>(model);
+    return table.has<tags::ANIM_SET>(e);
 }
 
 void cs::u_animation::init()
@@ -25,11 +23,15 @@ void cs::u_animation::init()
 
 void cs::u_animation::update(entity e)
 {
-    // get the value of the fields for the entity
-    uintn_t curr  = table.uints.get<fields::ANIM_CURR, fields::ANIM_CURR_SZ>(e);
-    uintn_t first = table.uints.get<fields::ANIM_FIRST, fields::ANIM_FIRST_SZ>(e);
-    uintn_t last  = table.uints.get<fields::ANIM_LAST, fields::ANIM_LAST_SZ>(e);
-    uintn_t timer = table.uints.get<fields::ANIM_TIMER, fields::ANIM_TIMER_SZ>(e);
+    // get the components for the entity
+    sprite & spr = table.get<sprite, tags::SPRITE>(e);
+    uint_set & anim = table.get<uint_set, tags::ANIM_SET>(e);
+
+    // get the values contained in the uint_set
+    uint32_t curr = anim.get<tags::ANIM_CURR, tags::ANIM_CURR_SZ>();
+    uint32_t first = anim.get<tags::ANIM_FIRST, tags::ANIM_FIRST_SZ>();
+    uint32_t last = anim.get<tags::ANIM_LAST, tags::ANIM_LAST_SZ>();
+    uint32_t timer = anim.get<tags::ANIM_TIMER, tags::ANIM_TIMER_SZ>();
 
     // update animation timer and current animation index
     if (timer > 0)
@@ -44,11 +46,11 @@ void cs::u_animation::update(entity e)
     }
 
     // apply the correct animation to the sprite
-    if (timer == 0 && table.sprites.has(e))
-        table.sprites.get(e).set_tiles(bn::sprite_items::squares.tiles_item(), curr);
+    if (timer == 0 && spr.has_value())
+        spr.value().set_tiles(bn::sprite_items::squares.tiles_item(), curr);
     
-    // update the fields
-    table.uints.set<fields::ANIM_CURR, fields::ANIM_CURR_SZ>(e, curr);
-    table.uints.set<fields::ANIM_TIMER, fields::ANIM_TIMER_SZ>(e, timer);
+    // update the animation information in the uintn_set compoennt
+    anim.set<tags::ANIM_CURR, tags::ANIM_CURR_SZ>(curr);
+    anim.set<tags::ANIM_TIMER, tags::ANIM_TIMER_SZ>(timer);
 
 }

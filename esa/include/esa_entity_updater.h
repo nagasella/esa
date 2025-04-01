@@ -1,160 +1,106 @@
-/**
- * @file esa_entity_updater.h
- * @author nagasella
- * 
- * @copyright Copyright (c) 2025
- * 
- */
-
 #ifndef ESA_ENTITY_UPDATER_H
 #define ESA_ENTITY_UPDATER_H
 
-#include "bn_vector.h"
-
 #include "esa.h"
+#include "esa_iupdater.h"
+
 
 namespace esa
 {
-
-    template<typename Table>
-    class entity_updater
+    
+    template<uint32_t Entities>
+    class entity_updater : public iupdater
     {
-
-        tag_t _tag;
-        u16 _emask [16];
-
-        protected:
-
-
         /**
-         * @brief A reference to the table associated to this updater.
+         * @brief The IDs of the entities this updater processes.
          * 
          */
-        Table& table;
+        vector<entity, Entities> _entities;
 
-
+        
         public:
 
 
         /**
          * @brief Constructor.
          * 
-         * @param table A reference to the table associated to this updater.
-         * @param tag_t A unique tag to assign to this updater.
          */
-        entity_updater(Table& t, tag_t tag) 
-            : table(t), _tag(tag)
-        {
-            for (u16 i = 0; i < 16; i++)
-                *(_emask + i)= 0;
-        }
-
-
-        /**
-         * @brief Get the unique tag assigned to this updater.
-         * 
-         */
-        tag_t tag()
-        {
-            return _tag;
-        }
-
-
-        /**
-         * @brief Initialize the updater.
-         * 
-         */
-        virtual void init()
+        entity_updater(tag_t tag) : iupdater::iupdater(tag, udpater_type::ENTITY_UPDATER)
         {
 
         }
 
 
         /**
-         * @brief Implements a `select` clause: filters the entities
-         * based on their model or fields.
+         * @brief Filter entities processed by this udpater based on their components.
          * 
          */
-        virtual bool select(entity_model model)
+        [[nodiscard]] virtual bool select(entity e)
         {
-
+            return false;
         }
 
 
         /**
-         * @brief Update each entity subscribed to this updater 
-         * (the ones that satisfy the `select` clause).
+         * @brief Update logic.
          * 
-         * @param e The ID of the entity.
          */
-        virtual void update(entity e)
-        {
-
-        }
+        virtual void update(entity e) = 0;
 
 
         /**
-         * @brief Tells whether this updater currently has no entity.
+         * @brief Subscribe an entity to this udpater.
          * 
-         * @return true 
-         * @return false 
-         */
-        bool empty()
-        {
-            for (u16 i = 0; i < 16; i++)
-            {
-                if ( *(_emask + i) != 0)
-                    return false;
-            }
-            return true;
-        }
-
-
-        /**
-         * @brief Subscribe an entity to this udpater, if applicable. 
-         * 
-         * @param e The ID of the entity.
          */
         void subscribe(entity e)
         {
-            if (select(table.models.get(e)))
-                *(_emask + (e >> 4)) |= (1 << (e & 15));
+            for (auto ent : _entities)
+            {
+                if (ent == e)
+                    return;
+            }
+            if (select(e))
+                _entities.push_back(e);
         }
 
 
         /**
-         * @brief Unsubscribe an entity from this updater. 
+         * @brief Unsubscribe an entity from this udpater.
          * 
-         * @param e The ID of the entity.
          */
         void unsubscribe(entity e)
         {
-            *(_emask + (e >> 4)) &= ~(1 << (e & 15));
+            for (uint32_t i = 0; i < _entities.size(); i++)
+            {
+                if (_entities[i] == e)
+                {
+                    _entities.erase(i);
+                    break;
+                }
+            }
         }
 
 
         /**
-         * @brief Tells if an entity is currently subscribed to this updater.
+         * @brief Returns a vector with the IDs of the entities processed by this updater.
          * 
-         * @param e The ID of the entity.
-         * @return true 
-         * @return false 
+         * @return vector<entity, Entities> 
          */
-        bool subscribed(entity e)
+        [[nodiscard]] vector<entity, Entities> entities()
         {
-            return (( *(_emask + (e >> 4)) >> (e & 15)) & 1) == 1; 
+            return _entities;
         }
 
 
         /**
-         * @brief Destructor.
+         * @brief Virtual destructor.
          * 
          */
         virtual ~entity_updater() = default;
 
     };
 
-
 }
+
 
 #endif

@@ -7,14 +7,15 @@ namespace tg
 {
     class u_scenegraph : public entity_updater
     {
+        entity_table & table;
+        
         public:
 
         u_scenegraph(entity_table & t);
-        bool select(entity_model model) override;
+        bool select(entity e) override;
         void init() override;
         void update(entity e) override;
     };
 }
-
 
 #endif

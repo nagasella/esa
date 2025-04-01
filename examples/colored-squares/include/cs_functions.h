@@ -17,6 +17,7 @@ namespace cs::functions
     // applied functions
     bool destroy_first_blue_square(entity_table& table, entity e);
     bool incr_blue_squares_velocity(entity_table& table, entity e);
+    bool remove_all_sprites(entity_table& table, entity e);
     
 }
 

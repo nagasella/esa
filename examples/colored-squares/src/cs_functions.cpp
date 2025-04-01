@@ -3,7 +3,8 @@
 
 bool cs::functions::find_red_squares(entity_table& table, entity e)
 {
-    if (table.models.get(e) == models::RED_SQUARE)
+    color & col = table.get<color, tags::COLOR>(e);
+    if (col == color::RED)
         return true;
     return false;
 }
@@ -11,10 +12,10 @@ bool cs::functions::find_red_squares(entity_table& table, entity e)
 
 bool cs::functions::find_yellow_squares_within(entity_table& table, entity e, x_boundaries& boundaries)
 {
-    entity_model model = table.models.get(e);
-    bn::fixed x = table.fixed.get<fields::X>(e);
+    color & col = table.get<color, tags::COLOR>(e);
+    position & pos = table.get<position, tags::POSITION>(e);
 
-    if (model == models::YELLOW_SQUARE && x < boundaries.max && x > boundaries.min)
+    if (col == color::YELLOW && pos.x < boundaries.max && pos.x > boundaries.min)
         return true;
 
     return false;
@@ -23,8 +24,10 @@ bool cs::functions::find_yellow_squares_within(entity_table& table, entity e, x_
 
 bool cs::functions::destroy_first_blue_square(entity_table& table, entity e)
 {
-    if (table.models.get(e) == models::BLUE_SQUARE)
+    color & col = table.get<color, tags::COLOR>(e);
+    if (col == color::BLUE)
     {
+        table.get<sprite, tags::SPRITE>(e).reset(); // deallocate sprite resources
         table.destroy(e);
         return true;
     }
@@ -34,21 +37,29 @@ bool cs::functions::destroy_first_blue_square(entity_table& table, entity e)
 
 bool cs::functions::incr_blue_squares_velocity(entity_table& table, entity e)
 {
-    if (table.models.get(e) == models::BLUE_SQUARE)
+    color & col = table.get<color, tags::COLOR>(e);
+
+    if (col == color::BLUE)
     {
-        bn::fixed vx = table.fixed.get<fields::VX>(e);
-        bn::fixed vy = table.fixed.get<fields::VY>(e);
+        velocity & vel = table.get<velocity, tags::VELOCITY>(e);
         
-        if (vx > 0)
-            table.fixed.set<fields::VX>(e, vx + 1);
+        if (vel.x > 0)
+            vel.x += 1;
         else
-            table.fixed.set<fields::VX>(e, vx - 1);
+            vel.x -= 1;
         
-        if (vy > 0)
-            table.fixed.set<fields::VY>(e, vy + 1);
+        if (vel.y > 0)
+            vel.y += 1;
         else
-            table.fixed.set<fields::VY>(e, vy - 1);
+            vel.y -= 1;
     }
 
+    return false;
+}
+
+
+bool cs::functions::remove_all_sprites(entity_table& table, entity e)
+{
+    table.get<sprite, tags::SPRITE>(e).reset();
     return false;
 }

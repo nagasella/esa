@@ -3,65 +3,58 @@
 
 #include "esa.h"
 
+#include "bn_optional.h"
+#include "bn_sprite_ptr.h"
+
+
 namespace cs
 {
-    // Parametrization of an entity table and its updaters
+    // parametrization of an entity table and its updaters
     using entity         = esa::entity;
-    using entity_model   = esa::entity_model;
-    using uintn_t        = esa::uintn_t;
-    using entity_table   = esa::entity_table<128, 4, 4, 1>;
-    using entity_updater = esa::entity_updater<entity_table>;
-    using table_updater  = esa::table_updater<entity_table>;
-    using cached_query   = esa::cached_query<entity_table>;
+    using entity_table   = esa::entity_table<128, 8, 6, 1, 0>;
+    using entity_updater = esa::entity_updater<128>;
+    using table_updater  = esa::table_updater;
+    using cached_query   = esa::cached_query<128>;
+    using uint_set       = esa::uintn_set;
 
-    // Table fields
-    namespace fields
+    // components
+    struct position
     {
-        enum
-        {
-            // bn::fixed
-            X = 0,
-            Y = 1,
-            VX = 2,
-            VY = 3,
+        bn::fixed x, y;
+    };
 
-            // int
-            ANGLE = 0,
-
-            // enum
-            SCALE = 0, // left bit-shift
-            SCALE_SZ = 2, // size of the field in bits
-            ANIM_CURR = 2,
-            ANIM_CURR_SZ = 2,
-            ANIM_FIRST = 4,
-            ANIM_FIRST_SZ = 2,
-            ANIM_LAST = 6,
-            ANIM_LAST_SZ = 2,
-            ANIM_TIMER = 8,
-            ANIM_TIMER_SZ = 4,
-
-            // bool
-            VISIBLE = 0
-        };
-    }
-
-    // Entity models
-    namespace models
+    struct velocity
     {
-        enum
-        {
-            RED_SQUARE = 0,
-            BLUE_SQUARE = 1,
-            YELLOW_SQUARE = 2,
-            FLASHING_SQUARE = 3
-        };
-    }
+        bn::fixed x, y;
+    };
 
-    // Updaters tags
+    using sprite = bn::optional<bn::sprite_ptr>;
+
+    // tags for components, updaters, etc
     namespace tags
     {
         enum
         {
+            // components
+            POSITION = 0, // custom datatypes
+            VELOCITY = 1,
+            SPRITE = 2,
+            COLOR = 3,
+            SCALE = 4, // int
+            ANGLE = 5,
+            VISIBLE = 6, // bool
+
+            ANIM_SET = 7, // uintn set for animation info
+            ANIM_CURR = 0,
+            ANIM_CURR_SZ = 2,
+            ANIM_FIRST = 2,
+            ANIM_FIRST_SZ = 2,
+            ANIM_LAST = 4,
+            ANIM_LAST_SZ = 2,
+            ANIM_TIMER = 6,
+            ANIM_TIMER_SZ = 4,
+
+            // updaters
             MOVEMENT = 0,
             ROTATION = 1,
             SCALING = 2,
@@ -69,9 +62,16 @@ namespace cs
             ENTITY_MANAGER = 4,
             ANIMATION = 5,
 
-            QRY_ROTATION = 6
+            // queries
+            QRY_ROTATION = 0
         };
     }
+
+    // colors
+    enum class color
+    {
+        RED, BLUE, YELLOW, FLASHING
+    };
     
 }
 

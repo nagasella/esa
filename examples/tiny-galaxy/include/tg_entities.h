@@ -7,10 +7,9 @@
 namespace tg::entities
 {
     void galaxy(entity_table & table, bn::fixed x, bn::fixed y);
-    void solar_system(entity_table & table, bn::fixed angle, uintn_t parent, bn::random & rnd);
-    void planet(entity_table & table, bn::fixed angle, uintn_t parent, bn::random & rnd);
-    void moon(entity_table & table, bn::fixed angle, uintn_t parent, bn::random & rnd);
+    void solar_system(entity_table & table, bn::fixed angle, entity parent, bn::random & rnd);
+    void planet(entity_table & table, bn::fixed angle, entity parent, bn::random & rnd);
+    void moon(entity_table & table, bn::fixed angle, entity parent, bn::random & rnd);
 }
-
 
 #endif

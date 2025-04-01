@@ -1,44 +1,21 @@
-/**
- * @file esa.h
- * @author nagasella
- * 
- * @copyright Copyright (c) 2025
- * 
- */
-
 #ifndef ESA_H
 #define ESA_H
 
-/**
- * @brief ESA namespace.
- * 
- */
+
 namespace esa
 {
 
     /**
-     * @brief `u16` alias
+     * @brief 32 bits unsigned integer.
      * 
      */
-    using u16 = unsigned short;
-
-    /**
-     * @brief `u32` alias.
-     * 
-     */
-    using u32 = unsigned int;
+    using uint32_t = unsigned int;
 
     /**
      * @brief `entity` alias.
      * 
      */
     using entity = unsigned int;
-
-    /**
-     * @brief `entity_model` alias.
-     * 
-     */
-    using entity_model = unsigned int;
 
 
     /**
@@ -49,82 +26,151 @@ namespace esa
 
 
     /**
-     * @brief `field_t` alias, used for fields IDs.
+     * @brief A minimal, custom implemnetation of `std::array`.
      * 
+     * @tparam T the data type of the array elements.
+     * @tparam Size The size of the array.
      */
-    using field_t = unsigned int;
+    template<typename T, uint32_t Size>
+    class array;
 
 
     /**
-     * @brief `uintn_t` alias, used for `uintn_t` fields (`unsigned int` of `n` bits).
+     * @brief A minimal, custom implementation of `std::vector`.
+     * Its maximum capacity is defined at compile time.
+     * Integer indexing is privileged compared to iterator indexing,
+     * however the vector allows for range-based for loops.
      * 
+     * @tparam T The data type of the vector elements.
+     * @tparam MaxSize The maximum number of elements the vector can contain.
      */
-    using uintn_t = unsigned int;
+    template<typename T, uint32_t MaxSize>
+    class vector;
 
 
     /**
-     * @brief `uintn_size` alias, used for `uintn_t` fields.
+     * @brief Base class of `esa::series` (used for polymorphic behavior).
      * 
+     * @tparam Entities 
      */
-    using uintn_size = unsigned int;
+    template<uint32_t Entities>
+    class iseries;
 
 
     /**
-     * @brief The main ESA data structure. It allows to organize entities (game objects) into a table, 
-     * where each row is the unique ID of an entity, and each column is a field (a potential variable for the Entity).
+     * @brief A series is an array of components. 
+     * It can be used as a column inside a table.
      * 
-     * @tparam Entities The maximum number of entities (game objects) this table can store (must be > 1 and <= 256).
-     * @tparam Models The maximum number of entity models (types) this table can store (must be > 1 and <= 32).
-     * @tparam Fixed The maximum number of fields of type `bn::fixed` this table can store for each entity (must be < 32).
-     * @tparam Ints The maximum number of fields of type `int` this table can store for each entity (must be < 32).
+     * @tparam ComponentType The type of the component.
+     * @tparam Entities The maximum number of entities the series can work with. (same as the associated entity table)
      */
-    template<u32 Entities, u32 Models, u32 Fixed, u32 Ints>
+    template<typename ComponentType, uint32_t Entities>
+    class series;
+
+
+    /**
+     * @brief Entity table is the main data structure of ESA. Entities
+     * represent row-IDs inside the table, while components are the column IDs.
+     * 
+     * @tparam Entities The maximum number of entities the table can work with.
+     * @tparam Components The maximum number of components the table can work with.
+     * @tparam Updaters The maximum number of updaters associated to this table. (table updaters + entity updaters)
+     * @tparam Queries The maximum number of cached queries associated to this table.
+     * @tparam Applys The maximum number of cached apply objects associated to this table.
+     */
+    template<uint32_t Entities, uint32_t Components, uint32_t Updaters, uint32_t Queries, uint32_t Applys>
     class entity_table;
 
 
     /**
-     * @brief An updater that works on a table, but does not process specific entities.
+     * @brief An entity mask.
      * 
-     * @tparam Table The type of `entity_table` this updater works on.
      */
-    template<typename Table>
-    class table_updater;
+    template<uint32_t Entities>
+    class entity_mask;
 
 
     /**
-     * @brief An updater that can process entities of a specific model, or that possess specific fields.
+     * @brief Type of updater (enumaration).
      * 
-     * @tparam Table The type of `entity_table` this updater works on.
      */
-    template<typename Table>
+    enum class udpater_type
+    {
+        ENTITY_UPDATER,
+        TABLE_UPDATER
+    };
+
+
+    /**
+     * @brief Base class for entity updaters and table updaters (used for polymorphic behavior).
+     * 
+     */
+    class iupdater;
+
+
+    /**
+     * @brief An entity updater is an updater that works only on specific entities.
+     * 
+     * @tparam Entities The maximum number of entities the updater will work with (must be the same as in its corresponding table).
+     */
+    template<uint32_t Entities>
     class entity_updater;
 
 
     /**
-     * @brief A query that caches some information for imporved performance.
+     * @brief  A table updater is an updater that does not work on any specific entity.
      * 
-     * @tparam Table The type of `entity_table` this query works on.
      */
-    template<typename Table>
+    class table_updater;
+
+
+    /**
+     * @brief A cached query is used to find entities that satisfy a specific condition.
+     * 
+     * @tparam Entities The maximum number of entities the query will work with (must be the same as in its corresponding table).
+     */
+    template<uint32_t Entities>
     class cached_query;
 
 
     /**
-     * @brief An apply object that caches some information for imporved performance.
+     * @brief A cached apply can perform operations on entities that satisfy a specific condition.
      * 
-     * @tparam Table The type of `entity_table` this apply object works on.
+     * @tparam Entities The maximum number of entities the apply object will work with (must be the same as in its corresponding table).
      */
-    template<typename Table>
+    template<uint32_t Entities>
     class cached_apply;
+
+
+    /**
+     * @brief A set of 32 boolean values, implmented in a single unsigned integer.
+     * Can be used as a component for memory efficiency in exchange for some performance loss. 
+     * 
+     */
+    class bool_set;
+
+
+    /**
+     * @brief A set of `unisgned int` values of `n` bits. Each of the stored values
+     * can take up any number of bits (but the sum of all the bits taken up by each individual
+     * entry must be <= 32). It can be used as a component for memory efficiency in exchange
+     * for some performance loss.
+     * 
+     */
+    class uintn_set;
 
 
 }
 
-#include "esa_arrays.h"
-#include "esa_entity_table.h"
-#include "esa_table_updater.h"
+#include "esa_array.h"
+#include "esa_vector.h"
+#include "esa_entity_mask.h"
+#include "esa_series.h"
 #include "esa_entity_updater.h"
+#include "esa_table_updater.h"
 #include "esa_cached_query.h"
 #include "esa_cached_apply.h"
+#include "esa_entity_table.h"
+#include "esa_components.h"
 
 #endif

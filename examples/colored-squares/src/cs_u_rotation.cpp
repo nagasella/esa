@@ -1,14 +1,15 @@
 #include "cs_u_rotation.h"
 
 cs::u_rotation::u_rotation(entity_table& t) :
-    entity_updater::entity_updater(t, tags::ROTATION)
+    entity_updater::entity_updater(tags::ROTATION),
+    table(t)
 {
     
 }
 
-bool cs::u_rotation::select(entity_model model)
+bool cs::u_rotation::select(entity e)
 {
-    return table.intgs.has<fields::ANGLE>(model);
+    return table.has<tags::ANGLE>(e);
 }
 
 void cs::u_rotation::init()
@@ -18,19 +19,13 @@ void cs::u_rotation::init()
 
 void cs::u_rotation::update(entity e)
 {
-    // read the fields
-    int angle = table.intgs.get<fields::ANGLE>(e);
+    sprite & spr = table.get<sprite, tags::SPRITE>(e);
+    int & angle = table.get<int, tags::ANGLE>(e);
 
-    // modify the fields
     angle++;
-
     if (angle == 360)
         angle = 0;
     
-    // apply rotation to sprite
-    if (table.sprites.has(e))
-        table.sprites.get(e).set_rotation_angle(angle);
-
-    // update the fields
-    table.intgs.set<fields::ANGLE>(e, angle);
+    if (spr.has_value())
+        spr.value().set_rotation_angle(angle);
 }

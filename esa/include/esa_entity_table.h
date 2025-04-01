@@ -368,39 +368,20 @@ namespace esa
 
 
         /**
-         * @brief Get an entity updater based on its unique tag.
+         * @brief Get an updater based on its unique tag.
          * 
-         * @tparam Tag The unique tag of the entity updater.
-         * @return entity_updater<Entities>* 
+         * @tparam Tag The unique tag of the updater.
+         * @return iupdater* 
          */
         template<tag_t Tag>
-        [[nodiscard]] entity_updater<Entities> * get_entity_updater()
+        [[nodiscard]] iupdater* get_updater()
         {
             for (auto u : *_updaters)
             {
-                if (u->type() == udpater_type::ENTITY_UPDATER && u->tag() == Tag)
-                    return (entity_updater<Entities> *) u;
+                if (u->tag() == Tag)
+                    return u;
             }
-            assert(1 == 2 && "ESA ERROR: entity updater could not be found!");
-            return nullptr;
-        }
-
-
-        /**
-         * @brief Get a table updater based on its unique tag.
-         * 
-         * @tparam Tag The unique tag of the table updater.
-         * @return table_updater* 
-         */
-        template<tag_t Tag>
-        [[nodiscard]] table_updater * get_table_updater()
-        {
-            for (auto u : *_updaters)
-            {
-                if (u->type() == udpater_type::TABLE_UPDATER && u->tag() == Tag)
-                    return (table_updater *) u;
-            }
-            assert(1 == 2 && "ESA ERROR: table updater could not be found!");
+            assert(1 == 2 && "ESA ERROR: updater could not be found!");
             return nullptr;
         }
 

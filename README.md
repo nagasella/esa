@@ -218,11 +218,11 @@ In the [example](#a-practical-example) above, the entity table was parameterized
 using entity_table = esa::entity_table<2, 2, 1, 0, 0>;
 ```
 
-This means that our `entity_table` can contain at most 2 entities, 2 components and 1 updater. Other ESA objects (namely entity updaters, cached queries and cached apply objects) need to be parametrized only in terms of the maximum number of entities. (see [queries](#queries) and [apply](#apply) sections)
+This means that an `entity_table` can contain at most 2 entities, 2 components and 1 updater. Other ESA objects (namely entity updaters, [cached queries]((#queries)) and [cached apply objects](#apply)) need to be parametrized only in terms of the maximum number of entities.
 
 ## More about components
 
-Components contain data for entities, and they represents _columns_ of the entity table: at the crossing of each column (component ID) and row (entity ID) there is the component for that entity. Out of all the components available in an entity table, each entity will own only some of them. Components can be of any data type, both simple (`int`, `bool`, ...) or complex (`struct`, etc). You may have more than one component with the same data type. Each component should have an integer index associated, called [tag](#tags-and-updaters). Such index should be unique for each component, and should be between `0` and the maximum number of components defined for your table (as explained in the [previous section](#more-about-entity-tables)). In the example above, we have:
+Components contain data for entities, and they represent the _columns_ of an entity table: at the crossing of each column (component ID) and row (entity ID) there is a component for an entity. Out of all the components available in an entity table, each entity will own only some of them. Components can be of any data type, both simple (`int`, `bool`, ...) or complex (`struct`, ...). More than one component with the same data type is allowed; however, each component should have an associated integer index, called [tag](#tags-and-updaters). Such index should be between `0` and the maximum number of components allowed for the table (as explained in the [previous section](#more-about-entity-tables)). In the example above, we have:
 
 ```cpp
 #define VELOCITY 0
@@ -240,14 +240,14 @@ struct velocity
 using sprite = bn::optional<bn::sprite_ptr>;
 ```
 
-The velocity component is a `struct`, while the `sprite` component is defined as an optional butano sprite object. We then need to declare that our entity table makes these components available for entities (this is done in the `main`, after creating the entity table):
+The velocity component is a `struct`, while the `sprite` component is defined as an optional butano sprite object. We need to add these component types to the table:
 
 ```cpp
 table.add_component<velocity>(VELOCITY);
 table.add_component<sprite>(SPRITE);
 ```
 
-At this point, whenever an entity is created we can add to it any of these components (see section [creating and deleting entities](#creating-and-deleting-entities)). During the game loop, a reference to the component of a certain entity can be retrieved like this:
+Then, whenever an entity is created it will be possible to add to it any of these components (see section [creating and deleting entities](#creating-and-deleting-entities)). During the game loop, a reference to the component of a certain entity can be retrieved like this:
 
 ```cpp
 velocity & vel = table.get<velocity, VELOCITY>(e);
@@ -257,45 +257,59 @@ Note that you need to used both the data type AND tag of the component in order 
 
 ### ESA helper components
 
-ESA offers two components that are meant to help with memory efficiency (with some small performance overhead): `bool_set` and `uintn_set`. The first type represents a collection of 32 `bool` values, stored in a single `unsigned int`; the second allows to store unsigned integer values of `n` bits (up to a total of 32 used bits).
+ESA offers two components that are meant to help with memory efficiency (with some small performance overhead): `bool_set` and `uintn_set`. The first type represents a collection of 32 `bool` values, stored in a single `unsigned int`; the second allows to store unsigned integer values of `n` bits (up to a total of 32 bits).
 
-As an example, a `bool_set` component can be added to a table like this:
-
-```cpp
-table.add_component<esa::bool_set>(COMPONENT_TAG);
-```
-
-Then, one of the booleans can be accessed as follows:
+As an example, this is how to use a `bool_set`:
 
 ```cpp
-bool_set & bools = table.get<bool_set, COMPONENT_TAG>(e);
-bool value = bools.get<BOOL_TAG>();
+// tag for the component
+#define BOOLEANS 0 
+
+// tags for the individual bool values
+#define VALUE0 0 
+#define VALUE1 1
+#define VALUE2 2
+
+// add the component to the table
+esa::entity_table<1, 1, 0, 0, 0> table;
+table.add_component<esa::bool_set>(BOOLEANS);
+
+// create an entity with a esa::bool_set component
+esa::entity e = table.create();
+table.add<esa::bool_set, BOOLEANS>(e);
+
+// get a reference to the component
+esa::bool_set & bools = table.get<esa::bool_set, BOOLEANS>(e);
+
+// set some boolean values
+bools.set<VALUE0>(true);
+bools.set<VALUE1>(false);
+bools.set<VALUE2>(false);
+
+// read the boolan values
+bool value1 = bools.get<VALUE0>; // true
+bool value2 = bools.get<VALUE1>; // false
+bool value3 = bools.get<VALUE2>; // false
 ```
 
-Here, the `BOOL_TAG` is an integer from `0` to `31`, used to access the specific boolean value. Then, the value can for example be modified like this:
-
-```cpp
-bools.set<BOOL_TAG>(false);
-```
-
-The way to use components of type `uintn_t` is quite similar, and an example of that is shown in the example `colored-squares`, to store information about animations.
+The way to use components of type `uintn_set` is quite similar, and an example of that is shown in the example `colored-squares` (to store information about animations).
 
 ## Creating and deleting entities
 
-The example program above shows how an enitty is created: 
+Entities can be added to a table simply by using: 
 
 ```cpp
 esa::entity e = table.create();
 ```
 
-And how compoennts are added:
+Then, we can start adding components (code from [example above](#a-practical-example)):
 
 ```cpp
 table.add<velocity, VELOCITY>(e, { 0.5, 0.5 });
 table.add<sprite, SPRITE>(e, bn::sprite_items::squares.create_sprite(0, 0));
 ```
 
-After having set up all the components, there is another important step which consists in _subscribing_ the entity to all the relevant updaters, queries and apply objects:
+Finally, there is a last step which consists in _subscribing_ the entity to all the relevant updaters, queries and apply objects:
 
 ```cpp
 table.subscribe(e);
@@ -307,17 +321,15 @@ Make sure not to forget this step, since otherwise entities cannot be processed 
 table.destroy(e);
 ```
 
-Where `e` is the ID of the entity. Keep in mind that any resource associated to an entity (like sprites) is not deallocated automatically when you use `destory`, so you should take care of this manually. Also, after deletion, it is a good idea to break from any ongoing entity loop, or return from the update functions, to avoid indexing issues in ESA. To delete all entities in a table, simply use:
+Keep in mind that any resource associated to an entity (like sprites) is not deallocated automatically when you use `destory`, so you should take care of this manually. Also, after deletion, it is a good idea to break from any ongoing entity loop, or return from update functions, to avoid indexing issues inside ESA. To delete all entities in a table, simply use:
 
 ```cpp
 table.clear();
 ```
 
-As a note, the IDs of entities that were destroyed are cached (in EWRAM), which allows to create and destroy entities very frequently without losing performance.
-
 ## More about entity updaters
 
-Entity updaters work only on entities that own (or not) specific components. For an entity updater to be able to filter entities correctly, you will need to implement the `select` member function. In an SQL query, `select` allows to select only certain columns from a table: similarly, in ESA it allows to filter entities based on the components they own. Take for example the code of the [example](#a-practical-example) above:
+Entity updaters work only on entities that own (or not) specific components. When you implement an entity updater, you will need to override the `select` member function for each entity updater. Take for example the code of the [example](#a-practical-example) above (note that a reference to the entity table must be obtained manually from the updater's constructor):
 
 ```cpp
 bool select(esa::entity e) override
@@ -327,7 +339,7 @@ bool select(esa::entity e) override
 }
 ```
 
-This tells that the entity updater will process all entities that have both the `SPRITE` and `VELOCITY` components. It is possible to use any arbitrarily complex filter, such as:
+This tells that the entity updater will process all entities that have both the `SPRITE` and `VELOCITY` components. It is possible to implement any arbitrarily complex filter, such as:
 
 ```cpp
 bool select(esa::entity e) override
@@ -338,49 +350,31 @@ bool select(esa::entity e) override
 }
 ```
 
-However, remember that this filter is applied _only when an entity is created_ inside the table (not at every frame). If you want to get the IDs of entities that satisfy a certain condition each frame, you can use [queries](#queries).
-
-In general, it is up to you to get a reference to the entity table associated to the updater through its constructor, like shown in the [example above](#a-practical-example).
+However, remember that this filter is applied _only when an entity is created_ inside the table (not at every frame). If you want to get the IDs of entities that satisfy a condition that changes dynamically at every frame, you should use [queries](#queries).
 
 ## Tags and updaters
 
-Tags are unique integer identifiers used for retrieving components, updaters, [cached queries](#queries) and [cached apply objects](#apply). For components, the usage of tags was already covered in the previous sections, so in this section we will focus on updaters instead.
+Tags are unique integer identifiers used for retrieving components, updaters, cached queries and cached apply objects. For components, the usage of tags was already covered in the previous sections, so in this section we will focus on updaters instead.
 
-The tag for any updater should be passed to the constructor of the base `entity_updater` or `table_updater` class, as shown in the [practical example](#a-practical-example). Then, entity updaters can be retrieved from anywhere else in the program through their tag:
-
-```cpp
-my_updater * updater = (my_updater *) table.get_entity_updater<TAG>();
-```
-
-Or, for table updaters:
+When implementing an updater, its tag should be passed to the constructor of the base `entity_updater` or `table_updater` class, as shown in the [practical example](#a-practical-example). Then, updaters can be retrieved from anywhere else in the program through their tag:
 
 ```cpp
-my_updater * updater = (my_updater *) table.get_table_updater<TAG>();
+my_updater * updater = (my_updater *) table.get_updater<TAG>();
 ```
 
 It is possible to unsubcribe an entity from an entity updater: in this case, the entity will not be processed by the updater even if it satisfies the `select` condition:
 
 ```cpp
-my_updater * updater = (my_updater *) table.get_entity_updater<TAG>();
 updater->unsubscribe(e);
 ```
 
 Then, the entity can be subscribed again with:
 
 ```cpp
-my_updater * updater = (my_updater *) table.get_entity_updater<TAG>();
 updater->subscribe(e);
 ```
 
-A typical case where this could be useful is to avoid to process entities that are off-screen, in order to save computational resources. 
-
-As shown in previous sections, when we first create an entity, we add its components and then we call:
-
-```cpp
-table.subscribe(e);
-```
-
-This corresponds to subscribing the entity to all the entity updaters that can process it (as well as [cached queries](#queries) and [cached apply objects](#apply)). Therefore, this is a fast way to subscribe the entity to all relevant updaters, queries and apply objects.
+A typical case where this could be useful is to avoid to process entities that are off-screen, in order to save computational resources.
 
 ## Update order
 
@@ -410,13 +404,13 @@ Then, the function can be used to query a table, generally from whithin some upd
 esa::vector<esa::entity, 128> red_squares = table.query<128>(&cs::functions::find_red_squares);
 ```
 
-The size of the vector should be enough to fit all the entities that are _expected_ to fit into it. Since this is not necessarily known at compile time, you should be careful about this.
+The size of the vector should be enough to fit all the entities that are _expected_ to be found by the query: since this is not necessarily known at compile time, you should be careful about this.
 
-This type of query is very practical as all it requires is to define a function; however it can be a bit inefficient, since the function is executed on all the entities in the table. The next type of query (cached query) is used to tackle this problem.
+This type of query is very practical as all it requires is to define a function; however it can be inefficient, since the function is applied to all the entities in the table. The next type of query (cached query) is used to tackle this problem.
 
 ### 2. Cached queries
 
-Cached queries are queries that are defined as classes, and they can be more efficient than regular queries. Their definition is similar to the definition of entity updaters, but instead of overriding an `update` function they override a `where` function. The naming is taken from classical SQL databases: the `where` function is a `bool` function that can filter based on each entity's components, and must return `true` if the query condition is satisfied, otherwise `false`. A unique tag must be defined for each cached query, pretty much like for updaters.
+Cached queries are queries that are defined as classes. Their definition is similar to the definition of entity updaters, but instead of overriding an `update` function they override a `where` function (the naming is taken from classical SQL databases): this is a `bool` function that will filter based on each entity's components data, and must return `true` if the query condition is satisfied, otherwise `false`. A unique tag must be defined for each cached query, pretty much like for updaters.
 
 Here is a simple example of cached query taken from the `colored-squares` example. The header file is:
 
@@ -497,11 +491,11 @@ Because of how the cached query was defined, this will return all entities that 
 select ANGLE from MY_TABLE where ANGLE > 180
 ```
 
-In cached queries, the cached part of the query is the `select` part: this is ran only _once_, when the entity is first added to the table. On the other hand, the `where` part is dynamic and so it is executed every time the query is called, but only on the entities that satisfy the `select` condition. Therefore, the execution of the query will gnerally be faster compared to queries implemented in a simple function.
+In cached queries, the cached part of the query is the `select` part: this is ran only _once_, when the entity is first added to the table. On the other hand, the `where` part is dynamic and so it is executed every time the query is called (but only on the entities that satisfy the `select` condition).
 
 ### 3. Dynamic queries
 
-Dynamic queries are queries that can receive a parameter (of any type), and filter based on that parameter, meaning that their filtering condition can change dynamically during the game. Both types of query described previously can be dynamic. Here is an example of a dynamic query based on a function, taken from the `colored-squares` demo:
+Dynamic queries are queries that can receive a parameter (of any type), and filter based on that parameter. Both types of query described previously can be dynamic. Here is an example of a dynamic query based on a function, taken from the `colored-squares` demo:
 
 ```cpp
 bool cs::functions::find_yellow_squares_within(entity_table& table, entity e, x_boundaries& boundaries)

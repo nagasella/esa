@@ -11,30 +11,13 @@ namespace esa
     class iseries
     {
         /**
-         * @brief Unique tag.
-         * 
-         */
-        tag_t _tag;
-
-
-        /**
          * @brief Entity mask.
          * 
          */
         entity_mask<Entities> _emask;
 
 
-        public:
-
-
-        /**
-         * @brief Constructor.
-         * 
-         */
-        iseries(tag_t tag)
-        {
-            _tag = tag;
-        }
+        protected:
 
 
         /**
@@ -46,6 +29,9 @@ namespace esa
         {
             _emask.add(e);
         }
+
+
+        public:
 
 
         /**
@@ -69,17 +55,6 @@ namespace esa
         [[nodiscard]] bool has(entity e)
         {
             return _emask.contains(e);
-        }
-
-
-        /**
-         * @brief Returns the unique tag of the series.
-         * 
-         * @return tag_t 
-         */
-        [[nodiscard]] virtual tag_t tag()
-        {
-            return _tag;
         }
 
 
@@ -109,16 +84,6 @@ namespace esa
 
 
         /**
-         * @brief Constructor.
-         * 
-         */
-        series(tag_t tag) : iseries<Entities>::iseries(tag)
-        {
-            
-        }
-
-
-        /**
          * @brief Add a compoennt to the entity.
          * 
          * @param e The ID of the entity.
@@ -128,17 +93,6 @@ namespace esa
         {
             iseries<Entities>::add(e);
             _array[e] = c;
-        }
-
-
-        /**
-         * @brief Remove the component for an entity.
-         * 
-         * @param e The ID of the entity.
-         */
-        void remove(entity e) override
-        {
-            iseries<Entities>::remove(e);
         }
         
 

@@ -1,6 +1,7 @@
 #include "bn_core.h"
 #include "bn_display.h"
 #include "bn_optional.h"
+#include "bn_keypad.h"
 #include "bn_sprite_ptr.h"
 
 #include "bn_sprite_items_squares.h"
@@ -25,15 +26,16 @@ using sprite = bn::optional<bn::sprite_ptr>;
 // parametrization of an entity table and its updaters
 using entity_table = esa::entity_table<2, 2, 1, 0, 0>;
 using entity_updater = esa::entity_updater<2>;
+using entity = esa::entity;
 
-// this updater changes the x, y coordinates of each entity's sprite based on its velocity
+// this updater changes the the (x, y) on-screen coordinates 
+// of each entity's sprite, based on the entity's velocity
 class u_movement : public entity_updater
 {
     entity_table & table;
 
     public:
 
-    // get a reference to the entity table through the constructor
     u_movement(entity_table& t) 
         : entity_updater::entity_updater(MOVEMENT),
         table(t)
@@ -42,26 +44,26 @@ class u_movement : public entity_updater
     }
 
     // select only entities that have both a sprite and velocity component
-    bool select(esa::entity e) override
+    bool select(entity e) override
     {
         return table.has<SPRITE>(e) 
             && table.has<VELOCITY>(e);
     }
 
-    // initialize the updater
+    // initialization (if needed...)
     void init() override
     {
 
     }
 
     // update each entity processed by this updater
-    void update(esa::entity e) override
+    void update(entity e) override
     {
-        // read this entity's components from the table
+        // read the entity's components from the table
         bn::sprite_ptr & spr = table.get<sprite, SPRITE>(e).value();
         velocity & vel = table.get<velocity, VELOCITY>(e);
 
-        // sprite position
+        // get the sprite position
         bn::fixed x = spr.x();
         bn::fixed y = spr.y();
 
@@ -87,12 +89,22 @@ class u_movement : public entity_updater
             vel.y *= -1;
         }
 
-        // update the sprite position for this entity
+        // update the sprite position
         spr.set_x(x + vel.x);
         spr.set_y(y + vel.y);
     }
 
 };
+
+
+// implements a query that finds all the entities moving towards the right
+bool find_entities_moving_right(entity_table & table, entity e)
+{
+    velocity & vel = table.get<velocity, VELOCITY>(e);
+    if (vel.x > 0)
+        return true;
+    return false;
+}
 
 
 int main()
@@ -102,7 +114,8 @@ int main()
     // define an entity table
     entity_table table;
 
-    // define the available components (these are like the columns of the table)
+    // define the available components
+    // for each component, a column in the table is created
     table.add_component<velocity>(VELOCITY);
     table.add_component<sprite>(SPRITE);
 
@@ -128,6 +141,19 @@ int main()
     {
         // update all the updaters previously added to this table
         table.update();
+
+        // when A is pressed, run the query that finds entities moving 
+        // towards the right, and reverse their x direction
+        if (bn::keypad::a_pressed())
+        {
+            esa::vector<entity, 2> ids = table.query<2>(&find_entities_moving_right);
+            for (entity e : ids)
+            {
+                velocity & vel = table.get<velocity, VELOCITY>(e);
+                vel.x *= -1;
+            }       
+        }
+
         bn::core::update();
     }
 

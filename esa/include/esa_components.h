@@ -29,10 +29,10 @@ namespace esa
 
 
         /**
-         * @brief Constructor. Allows to specify initial boolean values
-         * for the 32 entiries.
+         * @brief Constructor. Allows to initialize all the 
+         * 32 booleans to the same value.
          * 
-         * @param value The value to assign.
+         * @param value either `true` or `false`.
          */
         bool_set(bool value)
         {

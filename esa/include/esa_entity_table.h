@@ -40,6 +40,13 @@ namespace esa
 
 
         /**
+         * @brief Tells where each type of component series (table column) is located.
+         * 
+         */
+        array<component_location, Components> * _components_location;
+
+
+        /**
          * @brief The table's columns. (components)
          * 
          */
@@ -77,9 +84,12 @@ namespace esa
         entity_table() : _columns(nullptr)
         {
             _pooled_ids = new vector<entity, Entities>();
+            _components_location = new array<component_location, Components>();
             _updaters = new vector<iupdater *, (Updaters > 0 ? Updaters : 1)>();
             _queries = new vector<cached_query<Entities> *, (Queries > 0 ? Queries : 1)>();
             _applys = new vector<cached_apply<Entities> *, (Applys > 0 ? Applys : 1)>();
+            _used = 0;
+            _size = 0;
         }
 
 
@@ -178,9 +188,10 @@ namespace esa
 
 
         /**
-         * @brief Add a type of component to the table. Each component corresponds to a column
-         * of the table, and it must have a data type and a tag: while the data type can be the 
-         * same for different components, the tag must be unique for each one of them.
+         * @brief Add a new column of a certain data-type to the table. A column is
+         * just an array of components (potentially, one for each entity). 
+         * The components data is allocated in EWRAM: if you want it to
+         * be allocated in IWRAM for performance reasons, use `entity_table::add_series` instead.
          * 
          * @tparam ComponentType The data type of the component.
          * @param tag The unique tag to associate to this component.
@@ -189,7 +200,26 @@ namespace esa
         void add_component(tag_t tag)
         {
             assert(_columns[tag] == nullptr);
-            _columns[tag] = new series<ComponentType, Entities>(tag);
+            (*_components_location)[tag] = component_location::EWRAM;
+            _columns[tag] = new series<ComponentType, Entities>();
+        }
+
+
+        /**
+         * @brief Add a new column to the table. A column is
+         * just an array of components (potentially, one for each entity). 
+         * In this case, the column must have been previously
+         * allocated on the stack (IWRAM), as a `esa::series<ComponentType, Entities>` object.
+         * The `Entities` template parameter of the series should match the one of the entity table.
+         * 
+         * @param column A pointer to the series to add (created on the stack, and NOT with `new`).
+         * @param tag The unique tag to associate to this component.
+         */
+        void add_series(iseries<Entities> * s, tag_t tag)
+        {
+            assert(_columns[tag] == nullptr);
+            (*_components_location)[tag] = component_location::IWRAM;
+            _columns[tag] = s;
         }
 
 
@@ -428,7 +458,7 @@ namespace esa
          * @brief Run a cached query and get the IDs of the entities that satisfy it.
          * 
          * @tparam Tag The unique tag of the cached query.
-         * @tparam MaxEntities The expected maximum number of entities.
+         * @tparam MaxEntities The expected maximum number of entities the query will find.
          * @return esa::vector<entity, MaxEntities> 
          */
         template<tag_t Tag, uint32_t MaxEntities>
@@ -450,7 +480,7 @@ namespace esa
         /**
          * @brief Run a query based on a user-defined function.
          * 
-         * @tparam MaxEntities The expected maximum number of entities.
+         * @tparam MaxEntities The expected maximum number of entities the query will find.
          * @param func A pointer to function implementing the query condition.
          * @return esa::vector<entity, MaxEntities> 
          */
@@ -472,7 +502,7 @@ namespace esa
          * @brief Run a query based on a user-defined function. 
          * Allows to pass a parameter of any type for dynamic filtering.
          * 
-         * @tparam MaxEntities The expected maximum number of entities.
+         * @tparam MaxEntities The expected maximum number of entities the query will find.
          * @tparam T The type of the parameter passed to the query.
          * @param func The function implementing the query condition.
          * @param parameter The parameter to pass to the query function.
@@ -501,8 +531,9 @@ namespace esa
         void apply()
         {
             cached_apply<Entities> * a = get_apply<Tag>();
+            vector<entity, Entities> ids =  a->entities();
             assert(a != nullptr && "ESA ERROR: cached apply object could not be found!");
-            for (auto e : a->entities())
+            for (auto e : ids)
             {
                 if (a->apply(e))
                     return;
@@ -566,9 +597,11 @@ namespace esa
 
             for (uint32_t i = 0; i < _columns.size(); i++)
             {
-                if (_columns[i] != nullptr)
+                if ((*_components_location)[i] == component_location::EWRAM && _columns[i] != nullptr)
                     delete _columns[i];
             }
+
+            delete _components_location;
         }
 
     };

@@ -49,6 +49,17 @@ namespace esa
 
 
     /**
+     * @brief Enumeration used to tells where a component series is located (IWRAM or EWRAM).
+     * 
+     */
+    enum class component_location
+    {
+        IWRAM,
+        EWRAM
+    };
+
+
+    /**
      * @brief Base class of `esa::series` (used for polymorphic behavior).
      * 
      * @tparam Entities 
@@ -74,9 +85,9 @@ namespace esa
      * 
      * @tparam Entities The maximum number of entities the table can work with.
      * @tparam Components The maximum number of components the table can work with.
-     * @tparam Updaters The maximum number of updaters associated to this table. (table updaters + entity updaters)
-     * @tparam Queries The maximum number of cached queries associated to this table.
-     * @tparam Applys The maximum number of cached apply objects associated to this table.
+     * @tparam Updaters The maximum number of updaters associated to the table. (table updaters + entity updaters)
+     * @tparam Queries The maximum number of cached queries associated to the table.
+     * @tparam Applys The maximum number of cached apply objects associated to the table.
      */
     template<uint32_t Entities, uint32_t Components, uint32_t Updaters, uint32_t Queries, uint32_t Applys>
     class entity_table;

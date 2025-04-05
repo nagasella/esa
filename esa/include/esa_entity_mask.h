@@ -4,6 +4,7 @@
 #include "esa.h"
 #include <cassert>
 
+#include "bn_log.h"
 
 namespace esa
 {
@@ -26,7 +27,7 @@ namespace esa
          */
         entity_mask()
         {
-            for (uint32_t i = 0; i < (Entities >> 5); i++)
+            for (uint32_t i = 0; i <= (Entities >> 5); i++)
                 _mask[i] = 0;
         }
 
@@ -39,7 +40,7 @@ namespace esa
         void add(entity e)
         {
             assert(e < Entities && "ESA ERROR: entity index is out of range!");
-            (_mask[ e >> 5 ]) |= (1 << (e & 31));
+            _mask[ e >> 5 ] |= (1 << (e & 31));
         }
 
 
@@ -51,7 +52,7 @@ namespace esa
         void remove(entity e)
         {
             assert(e < Entities && "ESA ERROR: entity index is out of range!");
-            (_mask[e >> 5]) &= ~(1 << (e & 31));
+            _mask[e >> 5] &= ~(1 << (e & 31));
         }
 
 
@@ -65,7 +66,7 @@ namespace esa
         [[nodiscard]] bool contains(entity e)
         {
             assert(e < Entities && "ESA ERROR: entity index is out of range!");
-            return (((_mask[e >> 5]) >> (e & 31)) & 1) == 1;
+            return ( (_mask[e >> 5] >> (e & 31)) & 1 ) == 1;
         }
 
     };

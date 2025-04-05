@@ -22,49 +22,51 @@ Below is a basic introduction to Entity Systems, as well as a comprehensive tuto
 
 [8. More about entity updaters](#more-about-entity-updaters)
 
-[9. Tags and udpaters](#tags-and-updaters)
+[9. Update order](#update-order)
 
-[10. Update order](#update-order)
+[10. Tags and udpaters](#tags-and-updaters)
 
-[11. Queries](#queries)
+[11. Query](#query)
 
 [12. Apply](#apply)
 
-[13. Boosting performance with ARM code (GBA specific)](#boosting-performance-with-arm-code-gba-specific)
+[13. Boosting performance with ARM code](#boosting-performance-with-arm-code)
 
 ## An introduction to Entity Systems
 
 Entity Systems have been a hot topic in game development for several years, although there are different visions about how to implement one. ESA is inspired by the model discussed in [this series of articles from 2007](https://t-machine.org/index.php/2007/09/03/entity-systems-are-the-future-of-mmog-development-part-1/) (always a great read for anyone interested in the topic). It implements some of these ideas, although adapted for the GBA hardware.
 
-The TL;DR version would be that an Entity System organizes the game logic in a way that is fundamentally different from a typical OOP approach, where game objects are generally represented by the instances of some classes and contain both the _data_ and the _logic_ of the objects. On the contrary, an Entity System is supposed to separate data from logic, implementing something more similar to a database: game objects (Entities) are organized into tables, where the row index is the ID of an Entity, the columns are the available Components for the entities, and Systems are routines that process all the entities that share a common set of Components.
+The TL;DR version would be that an Entity System organizes the game logic in a way that is fundamentally different from a typical OOP approach, where game objects are generally represented by the instances of some classes and contain both the _data_ and the _logic_ of the objects. On the contrary, an Entity System is supposed to separate data from logic, implementing something more similar to a database: game objects (Entities) are organized into tables, where the row index is the ID of an Entity, the columns are the available Components for the entities, and Systems are routines that process all the entities that share a common set of Components. The IDs of groups of entities that share common aspects are obtained through queries on the database.
 
 ## ESA's basics
 
-ESA is a compact, header-only framework (the main reason for this is that it extensively relies on C++ templates). It aims at implementing the vision described in the articles linked above, organizing the game with a logic that fundamentally resembles a _relational database_ (although here the _relational_ aspect is arguably not that important). Its main building blocks are the following:
-* The _Entity table_ is the main data structure of ESA: it contains all the data about game objects, organized in a tabular format
-* _Entities_ are IDs that identify game objects in a unique way; they are the _row index_ of the entity table
-* _Components_ are the _column indices_ of the table, and they implement the data for each entity (each entity can own (or not) every component)
+ESA is a compact, header-only framework. It aims to implement the vision described in the articles linked above, organizing the game in a way that resembles a _relational database_ (although here the _relational_ aspect is arguably not that important). Its main building blocks are the following:
+* The [_Entity table_](#more-about-entity-tables) is the main data structure of ESA: it contains all the data about game objects, organized in a tabular format
+* [_Entities_](#creating-and-deleting-entities) are IDs that identify game objects in a unique way; they are the _row index_ of the entity table
+* [_Components_](#more-about-components) are the _column indices_ of the table, and they implement the data for each entity (each entity can own (or not) each component)
 * _Updaters_ are objects that work on tables and update the components of entities. There are two types of updaters:
-    * _Entity Updaters_, which work on subsets of entities in a table based on their components
-    * _Table Updaters_, which do not necessarily process specific entities, but they can access a table's content freely
-* _Queries_ can be performed on an entity table, in order to filter it - that is, look for specific entities based on a condition. Also, entity tables support _Apply_ operations, which consist in applying a function iteratively on the whole table (this can allow to modify all entities that satisfy a certain condition)
+    * [_Entity Updaters_](#more-about-entity-updaters), which work on subsets of entities in a table based on their components
+    * _Table Updaters_, which do not necessarily process specific entities, but they can access a table's content freely (for example through queries)
+* [_Queries_](#query) can be performed on an entity table, in order to filter it - that is, look for specific entities based on a condition
+* Also, entity tables support [_Apply_](#apply) operations, which consist in applying a function iteratively on the whole table (this can allow to modify all entities that satisfy a certain condition, at a specific moment in time)
 
 ## Using ESA in your project
 
 If you are planning to use ESA with the butano game engine, you can find excellent information about how to set up DevkitARM and butano [here](https://gvaliente.github.io/butano/getting_started.html). After that, just clone or download this repo and set up the butano porject Makefile to include ESA's `include` path. 
 
-You can also use ESA with other libraries (like libtonc, libgba, ...), and for general information about the available options and how to set up your development environment check out the [getting started](https://gbadev.net/getting-started.html) page of the awesome GBAdev community website.
+You can also use ESA with other libraries (like libtonc, libgba, ...), and for general information about the available options and how to set up your development environment check out the [getting started](https://gbadev.net/getting-started.html) page of the awesome GBAdev community website. Again, you will need to add ESA's `include` path to your project.
 
-ESA comes with a few example projects, all of which are based on butano for the moment. If you want to run these projects, make sure that the relative path of butano defined in their Makefile matches its location on your computer.
+ESA comes with a few example projects, all of which are based on butano for the moment. Examples are always a good way to learn since you can try to tweak things and see what happens. If you want to run these projects, make sure that the relative path of butano defined in their Makefile matches its location on your computer.
 
 ## A practical example
 
-The following is a practical, compact example of usage of ESA (this is the source code of the `basics` project in the `examples` folder of this repo). It includes many of the basic ideas behind ESA.
+The following is a simple practical example of usage of ESA. This is the source code of the `basics` project in the `examples` folder of this repo, and as the name says it includes many of the basic ideas behind ESA. It will be used as a reference in the next sections of this tutorial.
 
 ```cpp
 #include "bn_core.h"
 #include "bn_display.h"
 #include "bn_optional.h"
+#include "bn_keypad.h"
 #include "bn_sprite_ptr.h"
 
 #include "bn_sprite_items_squares.h"
@@ -89,15 +91,16 @@ using sprite = bn::optional<bn::sprite_ptr>;
 // parametrization of an entity table and its updaters
 using entity_table = esa::entity_table<2, 2, 1, 0, 0>;
 using entity_updater = esa::entity_updater<2>;
+using entity = esa::entity;
 
-// this updater changes the x, y coordinates of each entity's sprite based on its velocity
+// this updater changes the the (x, y) on-screen coordinates 
+// of each entity's sprite, based on the entity's velocity
 class u_movement : public entity_updater
 {
     entity_table & table;
 
     public:
 
-    // get a reference to the entity table through the constructor
     u_movement(entity_table& t) 
         : entity_updater::entity_updater(MOVEMENT),
         table(t)
@@ -106,26 +109,26 @@ class u_movement : public entity_updater
     }
 
     // select only entities that have both a sprite and velocity component
-    bool select(esa::entity e) override
+    bool select(entity e) override
     {
         return table.has<SPRITE>(e) 
             && table.has<VELOCITY>(e);
     }
 
-    // initialize the updater
+    // initialization (if needed...)
     void init() override
     {
 
     }
 
     // update each entity processed by this updater
-    void update(esa::entity e) override
+    void update(entity e) override
     {
-        // read this entity's components from the table
+        // read the entity's components from the table
         bn::sprite_ptr & spr = table.get<sprite, SPRITE>(e).value();
         velocity & vel = table.get<velocity, VELOCITY>(e);
 
-        // sprite position
+        // get the sprite position
         bn::fixed x = spr.x();
         bn::fixed y = spr.y();
 
@@ -151,12 +154,22 @@ class u_movement : public entity_updater
             vel.y *= -1;
         }
 
-        // update the sprite position for this entity
+        // update the sprite position
         spr.set_x(x + vel.x);
         spr.set_y(y + vel.y);
     }
 
 };
+
+
+// implements a query that finds all the entities moving towards the right
+bool find_entities_moving_right(entity_table & table, entity e)
+{
+    velocity & vel = table.get<velocity, VELOCITY>(e);
+    if (vel.x > 0)
+        return true;
+    return false;
+}
 
 
 int main()
@@ -166,7 +179,8 @@ int main()
     // define an entity table
     entity_table table;
 
-    // define the available components (these are like the columns of the table)
+    // define the available components
+    // for each component, a column in the table is created
     table.add_component<velocity>(VELOCITY);
     table.add_component<sprite>(SPRITE);
 
@@ -192,6 +206,19 @@ int main()
     {
         // update all the updaters previously added to this table
         table.update();
+
+        // when A is pressed, run the query that finds entities moving 
+        // towards the right, and reverse their x direction
+        if (bn::keypad::a_pressed())
+        {
+            esa::vector<entity, 2> ids = table.query<2>(&find_entities_moving_right);
+            for (entity e : ids)
+            {
+                velocity & vel = table.get<velocity, VELOCITY>(e);
+                vel.x *= -1;
+            }       
+        }
+
         bn::core::update();
     }
 
@@ -222,14 +249,16 @@ This means that an `entity_table` can contain at most 2 entities, 2 components a
 
 ## More about components
 
-Components contain data for entities, and they represent the _columns_ of an entity table: at the crossing of each column (component ID) and row (entity ID) there is a component for an entity. Out of all the components available in an entity table, each entity will own only some of them. Components can be of any data type, both simple (`int`, `bool`, ...) or complex (`struct`, ...). More than one component with the same data type is allowed; however, each component should have an associated integer index, called [tag](#tags-and-updaters). Such index should be between `0` and the maximum number of components allowed for the table (as explained in the [previous section](#more-about-entity-tables)). In the example above, we have:
+Components contain data for entities, and they represent the _columns_ of an entity table: at the crossing of each column (component ID) and row (entity ID) there is a component for an entity. Out of all the components available in an entity table, each entity will only own some of them. Components can be of any data type, both simple (`int`, `bool`, ...) or complex (`struct`, ...). More than one component with the same data type is allowed; however, each component needs to be identified by a unique integer index, called [tag](#tags-and-updaters). Such index should be between `0` and the maximum number of components allowed for the table (as explained in the [previous section](#more-about-entity-tables)). 
+
+In the example above, we have defined an entity table with a maxium  of 2 components. We define their tags like this:
 
 ```cpp
 #define VELOCITY 0
 #define SPRITE 1
 ```
 
-The coresponding components are defined as follows:
+The coresponding components are:
 
 ```cpp
 struct velocity
@@ -240,20 +269,40 @@ struct velocity
 using sprite = bn::optional<bn::sprite_ptr>;
 ```
 
-The velocity component is a `struct`, while the `sprite` component is defined as an optional butano sprite object. We need to add these component types to the table:
+The velocity component is a `struct`, while the `sprite` component is defined as an optional butano sprite object. Then we create 2 columns in the table with these 2 datatypes:
 
 ```cpp
 table.add_component<velocity>(VELOCITY);
 table.add_component<sprite>(SPRITE);
 ```
 
-Then, whenever an entity is created it will be possible to add to it any of these components (see section [creating and deleting entities](#creating-and-deleting-entities)). During the game loop, a reference to the component of a certain entity can be retrieved like this:
+During the game loop, a reference to the component of a certain entity can be retrieved like this:
 
 ```cpp
 velocity & vel = table.get<velocity, VELOCITY>(e);
 ```
 
-Note that you need to used both the data type AND tag of the component in order to access it.
+Where `e` is the entity ID. Note that you will need to used both the data type AND tag of the component in order to access it.
+
+### Boosting components access performance
+
+When you add a new column to the table as it was done above, what is actually happening is that an array of components of that data type is being allocated on the heap - which, for the GBA, means EWRAM. Although there's plenty of room in EWRAM, the access to this type of memory can often be slower compared to IWRAM access. For this reason, ESA allows to store tables columns in IWRAM as well: in order to do this, you will need to define the array of components (in practice, an `esa::series` container) on the stack, and then pass a pointer to it to the entity table. If we consider the previous example, we need to replace this part of the code:
+
+```cpp
+table.add_component<velocity>(VELOCITY); // EWRAM allocated
+table.add_component<sprite>(SPRITE); // EWRAM allocated
+```
+
+With this:
+
+```cpp
+esa::series<velocity, 2> velocitites; // IWRAM allocated
+esa::series<sprite, 2> sprites; // IWRAM allocated
+table.add_series(&velocities, VELOCITY);
+table.add_series(&sprites, SPRITE);
+```
+
+The `esa::series` template parameters are (1) the data type of the component and (2) the maximum number of entities for the associated `entity_table`. When you define your entity table, you can use a mixed approach and decide which of its columns to put in EWRAM and which to put in IWRAM. If this is not enough for you performance-wise, check out also [how to boost performance with ARM code](#boosting-performance-with-arm-code) as an additional technique to speed up your code execution. In general, my suggestion is to start with placing all your components in EWRAM, and move them in IWRAM only if you really see some performance hit, since in general most of _any_ game's logic is not really performance critical.
 
 ### ESA helper components
 
@@ -302,26 +351,26 @@ Entities can be added to a table simply by using:
 esa::entity e = table.create();
 ```
 
-Then, we can start adding components (code from [example above](#a-practical-example)):
+Then, we can start adding components:
 
 ```cpp
 table.add<velocity, VELOCITY>(e, { 0.5, 0.5 });
 table.add<sprite, SPRITE>(e, bn::sprite_items::squares.create_sprite(0, 0));
 ```
 
-Finally, there is a last step which consists in _subscribing_ the entity to all the relevant updaters, queries and apply objects:
+Finally, there is a last step which consists in _subscribing_ the entity to all the relevant updaters, queries and apply objects (if this is not done, entities will not be processed so make sure not to forget it):
 
 ```cpp
 table.subscribe(e);
 ```
 
-Make sure not to forget this step, since otherwise entities cannot be processed by ESA! You can delete an entity at any point by using:
+You can delete an entity at any point by using:
 
 ```cpp
 table.destroy(e);
 ```
 
-Keep in mind that any resource associated to an entity (like sprites) is not deallocated automatically when you use `destory`, so you should take care of this manually. Also, after deletion, it is a good idea to break from any ongoing entity loop, or return from update functions, to avoid indexing issues inside ESA. To delete all entities in a table, simply use:
+Keep in mind that any resource associated to an entity (like sprites) is not deallocated automatically when you use `destory`, so you should take care of this manually. To delete all entities in a table, simply use:
 
 ```cpp
 table.clear();
@@ -329,7 +378,7 @@ table.clear();
 
 ## More about entity updaters
 
-Entity updaters work only on entities that own (or not) specific components. When you implement an entity updater, you will need to override the `select` member function for each entity updater. Take for example the code of the [example](#a-practical-example) above (note that a reference to the entity table must be obtained manually from the updater's constructor):
+Entity updaters work only on entities that own (or not) specific components. When you implement an entity updater, you will need to override the `select` member function for each entity updater. Take for example the code of the [example above](#a-practical-example):
 
 ```cpp
 bool select(esa::entity e) override
@@ -339,7 +388,7 @@ bool select(esa::entity e) override
 }
 ```
 
-This tells that the entity updater will process all entities that have both the `SPRITE` and `VELOCITY` components. It is possible to implement any arbitrarily complex filter, such as:
+This tells that the entity updater will process all entities that have both the compoennts with tags `SPRITE` and `VELOCITY`. Note that a reference to the entity table must be obtained manually from the updater's constructor It is possible to implement any arbitrarily complex filter, such as:
 
 ```cpp
 bool select(esa::entity e) override
@@ -350,19 +399,25 @@ bool select(esa::entity e) override
 }
 ```
 
-However, remember that this filter is applied _only when an entity is created_ inside the table (not at every frame). If you want to get the IDs of entities that satisfy a condition that changes dynamically at every frame, you should use [queries](#queries).
+However, remember that this filter is applied _only when an entity is created_ inside the table (not at every frame). If you want to get the IDs of entities that satisfy a condition that changes dynamically at every frame, you should use [queries](#queries). 
 
-## Tags and updaters
-
-Tags are unique integer identifiers used for retrieving components, updaters, cached queries and cached apply objects. For components, the usage of tags was already covered in the previous sections, so in this section we will focus on updaters instead.
-
-When implementing an updater, its tag should be passed to the constructor of the base `entity_updater` or `table_updater` class, as shown in the [practical example](#a-practical-example). Then, updaters can be retrieved from anywhere else in the program through their tag:
+Entity updaters also need to implement the `init` and `update` functions:
 
 ```cpp
-my_updater * updater = (my_updater *) table.get_updater<TAG>();
+void init() override
+{
+    // do some initialization...
+}
+
+void update(entity e) override
+{
+    // work on each entity that satisfies the "select" filter...
+}
 ```
 
-It is possible to unsubcribe an entity from an entity updater: in this case, the entity will not be processed by the updater even if it satisfies the `select` condition:
+These are called when calling `table.init()` and `table.update()`. 
+
+It is possible to _unsubcribe_ an entity from an entity updater: in this case, the entity will not be processed by the updater even if it satisfies the `select` condition:
 
 ```cpp
 updater->unsubscribe(e);
@@ -380,37 +435,57 @@ A typical case where this could be useful is to avoid to process entities that a
 
 When calling ```table.update()```, updaters are processed in order of insertion (it doesn't matter whether they are table updaters or entity updaters).
 
-## Queries
+## Tags and updaters
+
+Tags are unique integer identifiers used for retrieving components, updaters, cached queries and cached apply objects. As a clarification, tags should be unique for each ESA object, not _globally_: there will be a set of unique tags for components, a different set for updaters, another set for queries and another again for apply objects. Each of this set will be numbered `0` to `whatever`. For components, the usage of tags was already covered in the previous sections, so in this section we will focus on updaters instead.
+
+When implementing an updater, its tag should be passed to the constructor of the base `entity_updater` or `table_updater` class, as shown in the [practical example](#a-practical-example). Then, updaters can be retrieved from anywhere else in the program through their tag:
+
+```cpp
+my_updater * updater = (my_updater *) table.get_updater<UPDATER_TAG>();
+```
+
+This works all the same for [cached queries](#query) and [cached apply objects](#apply).
+
+## Query
 
 Queries are used to obtain a the IDs of all entities that satisfy a certain condition. They return a `esa::vector` (a custom and minimal implementation of `std::vector`) containing the IDs of the entities that satisfy the query criteria. Queries can be performed on a table by using one of the overloads of its `query` member function. Different types of query are available, so let's dive in and look at them one by one.
 
 ### 1. Queries based on a user-defined function
 
-The first type of queries are queries based on a user-defined function. This needs to be a `bool` function, which will be applied per-entity: it should take as arguments the `entity_table` and a single `entity`, and return `true` if the entity satisfies the query criteria, otherwise `false`. Here is an example of a user-defined query form the `colored-squares` example project, which finds all squares of color `RED`:
+The first type of queries are queries based on a user-defined function. This needs to be a `bool` function, which will be applied per-entity: it should take as arguments the `entity_table` and a single `entity`, and return `true` if the entity satisfies the query criteria, otherwise `false`. An example of this type of query was provided in the [practical example](#a-practical-example) section:
 
 ```cpp
-bool cs::functions::find_red_squares(entity_table & table, entity e)
+bool find_entities_moving_right(entity_table & table, entity e)
 {
-    color & col = table.get<color, tags::COLOR>(e);
-    if (col == color::RED)
+    velocity & vel = table.get<velocity, VELOCITY>(e);
+    if (vel.x > 0)
         return true;
     return false;
 }
 ```
 
-Then, the function can be used to query a table, generally from whithin some updater, to obtain a `esa::vector` containing all the entity IDs that satisfy the condition. For example, the query above is ran as follows:
+Then, the function can be used to query a table, to obtain a `esa::vector` containing all the entity IDs that satisfy the condition. For example, the query above is ran as follows:
 
 ```cpp
-esa::vector<esa::entity, 128> red_squares = table.query<128>(&cs::functions::find_red_squares);
+esa::vector<entity, 2> ids = table.query<2>(&find_entities_moving_right);
 ```
 
-The size of the vector should be enough to fit all the entities that are _expected_ to be found by the query: since this is not necessarily known at compile time, you should be careful about this.
+The size of the vector should be enough to fit all the entities that are _expected_ to be found by the query: since this is not necessarily known at compile time, you should be careful about this. You can then iterate on the ids easily using a range-based for looop:
 
-This type of query is very practical as all it requires is to define a function; however it can be inefficient, since the function is applied to all the entities in the table. The next type of query (cached query) is used to tackle this problem.
+```cpp
+for (entity e : ids)
+{
+    velocity & vel = table.get<velocity, VELOCITY>(e);
+    vel.x *= -1;
+}
+```
+
+This type of query is very practical as all it requires is to define a function; however it can be inefficient, since the function is applied to all the entities in the table indiscriminately. The next type of query (cached query) is used to tackle this problem and help improving performance.
 
 ### 2. Cached queries
 
-Cached queries are queries that are defined as classes. Their definition is similar to the definition of entity updaters, but instead of overriding an `update` function they override a `where` function (the naming is taken from classical SQL databases): this is a `bool` function that will filter based on each entity's components data, and must return `true` if the query condition is satisfied, otherwise `false`. A unique tag must be defined for each cached query, pretty much like for updaters.
+Cached queries are queries that are defined as classes. Their definition is similar to the definition of [entity updaters](#more-about-entity-updaters), but instead of overriding an `update` function they override a `where` function (the naming is taken from classical SQL databases): this is a `bool` function that will filter based on each entity's components data, and must return `true` if the query condition is satisfied, otherwise `false`. A unique tag must be defined for each cached query, pretty much like for updaters.
 
 Here is a simple example of cached query taken from the `colored-squares` example. The header file is:
 
@@ -451,8 +526,8 @@ cs::q_rotation::q_rotation(esa::entity_table& t) :
     
 }
 
-// this part of the query is CACHED: the query will be performed 
-// only on entities with the ANGLE component
+// this part of the query is CACHED (executed only once, when an entity is added to the table): 
+// the query will be performed only on entities with the ANGLE component
 bool cs::q_rotation::select(entity e)
 {
     return table.has<tags::ANGLE>(e);
@@ -463,8 +538,8 @@ void cs::q_rotation::init()
 
 }
 
-// this part of the query is DYNAMIC: the query will return 
-// only entities for which the current value of ANGLE is > 180 degrees
+// this part of the query is DYNAMIC (executed every time the query is called): 
+// the query will return only entities with ANGLE > 180 degrees
 bool cs::q_rotation::where(esa::entity e)
 {
     if (table.get<int, tags::ANGLE>(e) > 180)
@@ -479,13 +554,13 @@ An instance of the cached query created through `new` needs to be added to the e
 table.add_query(new q_rotation(table));
 ```
 
-Then, the query can be executed in a very simple way:
+Then, the query can be called easily:
 
 ```cpp
 esa::vector<esa::entity, 128> entities = table.query<tags::QRY_ROTATION, 128>();
 ```
 
-Because of how the cached query was defined, this will return all entities that have a `ANGLE` component (as required by the `select` clause) AND for which the ANGLE is > 180 degrees (as required by the `where` clause). This roughly corresponds to an SQL query like:
+This roughly corresponds to an SQL query like:
 
 ```sql
 select ANGLE from MY_TABLE where ANGLE > 180
@@ -495,7 +570,7 @@ In cached queries, the cached part of the query is the `select` part: this is ra
 
 ### 3. Dynamic queries
 
-Dynamic queries are queries that can receive a parameter (of any type), and filter based on that parameter. Both types of query described previously can be dynamic. Here is an example of a dynamic query based on a function, taken from the `colored-squares` demo:
+Dynamic queries are queries that can receive a parameter (of any type), and filter based on that parameter. Both types of query described previously (fucntion-based and cached queries) can be dynamic. Here is an example of a dynamic query based on a function, taken from the `colored-squares` demo:
 
 ```cpp
 bool cs::functions::find_yellow_squares_within(entity_table& table, entity e, x_boundaries& boundaries)
@@ -527,6 +602,7 @@ functions::x_boundaries boundaries = {
     .min = -64, 
     .max = 64 
 };
+
 // run the query
 esa::vector<entity, 128> yellow_squares = table.query<128, functions::x_boundaries>(&functions::find_yellow_squares_within, boundaries);
 ```
@@ -536,20 +612,20 @@ The example above is not particularly representative, since `boundaries.min` and
 Cached queries can be dynamic too: you can always define some varaible inside the cached query class itself, and then modify its value after retrieving the cached query object from the table at runtime:
 
 ```cpp
-my_query * query = (my_query *) table.get_cached_query<tags::QUERY_TAG>();
+my_query * query = (my_query *) table.get_query<QUERY_TAG>();
 query->parameter = something;
-esa::vector<esa::entity, 64> ids = table.query<tags::QUERY_TAG, 64>();
+esa::vector<esa::entity, 64> ids = table.query<QUERY_TAG, 64>();
 ```
 
 ## Apply
 
-Additionally to running queries, it is possible to apply a certain function to an entire table. This is done through some overload of `esa::entity_table::apply`. Unlike `query`, `apply` does not return any result; instead, the function is used to _modify_ the table's content conditionally. 
+Additionally to running queries, it is possible to apply a certain function to an entire table. This is done through some overload of `esa::entity_table::apply`. Unlike `query`, `apply` does not return any result; instead, the function is used to _modify_ the table's content conditionally.
 
 ### Types of `apply`
 
-Just like for queries, we have two different types of `apply` implementations:
+Just like for [queries](#queries), we have two different types of `apply` implementations:
 1. Apply a user-defined function to a whole table
-2. Define cached apply objects that can be called at runtime
+2. Use a cached apply object that can be called at runtime
 
 The two have the same advantages and disadvantages as queries based on functions and cached queries. Here, I will just give an example of the first type of `apply`, taken as usual from the `colored-squares` example. First we define the function to be applied:
 
@@ -567,19 +643,32 @@ bool cs::functions::destroy_first_blue_square(entity_table& table, entity e)
 }
 ```
 
-The function must return a `bool` value: if it returns `true`, the execution of the `apply` routine is interrupted, otheriwise it continues with the next entity in the table. In the case above, we want to delete only the first entity of color `BLUE` appearing in the table, so we simply return `true` whenever we find an entity that satisfies this condition. This allows to avoid unnecessary iterations on the table. Then, the function can be ran like this:
+The function must return a `bool` value: if it returns `true`, the execution of the `apply` routine is interrupted immediately, otheriwise it continues with the next entity in the table. This approach is used in order to avoid unnecessary iterations: for example, in the case above, we want to delete only the first entity of color `BLUE` appearing in the table, so we simply return `true` whenever we find an entity that satisfies this condition.  Then, the function can be ran like this:
 
 ```cpp
 table.apply(&cs::functions::destroy_first_blue_square);
 ```
 
-Regarding cached apply objects, they are defined pretty much like a cached queries, but the member function to override is `esa::cached_apply::apply` instead of `esa::cached_apply::where`. The `apply` member function should return `true` if the `apply` execution needs to stop, otherwise `false`. Cached apply objects also need to implement a `select` memeber function, which is the cached part of the apply.
+If you want to use a cached apply object instead, you can define them pretty much like cached queries, but the member function to override is `esa::cached_apply::apply` instead of `esa::cached_apply::where`: 
 
-## Boosting performance with ARM code (GBA specific)
+```cpp
+bool apply(esa::entity e) override
+{
+    // implement some conditional modification of the entity
+}
+```
+
+The `apply` member function should return `true` if the `apply` execution needs to stop, otherwise `false`. As for updaters and queries, cached apply objects also need to implement a `select` memeber function, which is the cached part of the apply, and they need to be assigned a tag. You can call a cached apply object on a table similarly to queries:
+
+```cpp
+table.apply<CACHED_APPLY_TAG>();
+```
+
+## Boosting performance with ARM code
 
 In GBA development, if you feel like you need some performance boost it is often a good idea to compile some of your code in ARM instructions and store it in IWRAM (by default, code is compiled as Thumb and stored in ROM). The butano engine allows to generate ARM code in IWRAM by using the macro `BN_CODE_IWRAM` (check [this](https://gvaliente.github.io/butano/faq.html#faq_memory_arm_iwram) out in the butano FAQ), but you can do the same with libtonc too. We can apply this principle to updaters, queries and apply objects.
 
-For example, take the scenegraph updater in the `tiny-galaxy` example project. We could change its header file `tg_u_scenegraph.h` as follows:
+In ESA, updaters generally implement small `update` functions that take care of very specialized tasks. This makes it easy to identify performance-critical parts of your program to compile as ARM code in IWRAM (remember that IWRAM does not have so much space). For example, if we take the `u_scenegraph` updater in the `tiny-galaxy` example project, we could change its header file `tg_u_scenegraph.h` as follows:
 
 ```cpp
 #ifndef TG_U_SCENEGRAPH_H
@@ -659,4 +748,4 @@ void tg::u_scenegraph::update(entity e)
 }
 ```
 
-This will give us some performance boost compared to the all-Thumb implementation. The same principle can be applied to table updaters, cached queries and cached apply objects.
+This will give some important performance boost compared to the all-Thumb implementation. The same principle can be applied to the `where` and `apply` functions of queries and apply objects, and it can also be combined with [putting components in IWRAM](#boosting-components-access-performance) to get even more performance advantages.

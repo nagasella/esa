@@ -5,6 +5,11 @@
 
 namespace tg
 {
+    /**
+     * @brief This updater implements the orbit of each
+     * star, planet and moon, relative to its parent.
+     * 
+     */
     class u_orbit : public entity_updater
     {
         entity_table & table;
@@ -14,7 +19,7 @@ namespace tg
         u_orbit(entity_table & t);
         bool select(entity e) override;
         void init() override;
-        void update(entity e) override;
+        void update() override;
     };
 }
 

@@ -19,33 +19,36 @@ void tg::u_scenegraph::init()
 
 }
 
-void tg::u_scenegraph::update(entity e)
+void tg::u_scenegraph::update()
 {
-    // entity components
-    position & pos = table.get<position, tags::POSITION>(e);
-    bn::sprite_ptr & spr = table.get<sprite, tags::SPRITE>(e).value();
-    entity parent = table.get<entity, tags::PARENT>(e);
-
-    // resolve the scengraph to get the absolute position of each entity
-    bn::fixed abs_x = pos.x;
-    bn::fixed abs_y = pos.y;
-
-    while (true)
+    for (entity e : this->subscribed())
     {
-        // add the parent's relative position
-        position & parent_pos = table.get<position, tags::POSITION>(parent);
-        abs_x += parent_pos.x;
-        abs_y += parent_pos.y;
+        // entity components
+        position & pos = table.get<position, tags::POSITION>(e);
+        bn::sprite_ptr & spr = table.get<sprite, tags::SPRITE>(e).value();
+        entity parent = table.get<entity, tags::PARENT>(e);
 
-        // if the parent does not have a parent, break
-        if (!table.has<tags::PARENT>(parent))
-            break;
-        parent = table.get<entity, tags::PARENT>(parent);
-        if (!table.has<tags::PARENT>(parent))
-            break;
+        // resolve the scengraph to get the absolute position of each entity
+        bn::fixed abs_x = pos.x;
+        bn::fixed abs_y = pos.y;
+
+        while (true)
+        {
+            // add the parent's relative position
+            position & parent_pos = table.get<position, tags::POSITION>(parent);
+            abs_x += parent_pos.x;
+            abs_y += parent_pos.y;
+
+            // if the parent does not have a parent, break
+            if (!table.has<tags::PARENT>(parent))
+                break;
+            parent = table.get<entity, tags::PARENT>(parent);
+            if (!table.has<tags::PARENT>(parent))
+                break;
+        }
+
+        // the entity's sprite position will be the absolute position on screen
+        spr.set_x(abs_x);
+        spr.set_y(abs_y);
     }
-
-    // the entity's sprite position will be the absolute position on screen
-    spr.set_x(abs_x);
-    spr.set_y(abs_y);
 }

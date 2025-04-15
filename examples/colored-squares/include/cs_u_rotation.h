@@ -5,7 +5,12 @@
 
 namespace cs
 {
-    class u_rotation : public entity_updater
+    /**
+     * @brief This updater takes care of handling the
+     * sprite rotation for entity with the ANGLE component.
+     * 
+     */
+    class u_rotation : public esa::entity_updater<96>
     {
         entity_table & table;
         
@@ -14,7 +19,7 @@ namespace cs
         u_rotation(entity_table& t);
         bool select(entity e) override;
         void init() override;
-        void update(entity e) override;
+        void update() override;
     };
 }
 

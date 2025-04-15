@@ -5,7 +5,12 @@
 
 namespace cs
 {
-    class u_entity_manager : public table_updater
+    /**
+     * @brief This updater takes care of adding/removing/modifying
+     * the entities on screen based on keypad input.
+     * 
+     */
+    class u_entity_manager : public esa::table_updater
     {
         entity_table & table;
         

@@ -7,14 +7,14 @@
 
 namespace esa
 {
-    template<typename T, uint32_t Size>
+    template<typename Type, uint32_t Size>
     class array
     {
         /**
          * @brief Actual array of data.
          * 
          */
-        T _data [ Size ];
+        Type _data [ Size ];
 
 
         public:
@@ -35,7 +35,7 @@ namespace esa
          * 
          * @param value The value to assign for initialization.
          */
-        array(T value)
+        array(Type value)
         {
             for (uint32_t i = 0; i < Size; i++)
                 _data[i] = value;
@@ -43,7 +43,7 @@ namespace esa
 
 
         /**
-         * @brief Tells the current vector size.
+         * @brief Tells the size of the array.
          * 
          * @return uint32_t 
          */
@@ -57,12 +57,12 @@ namespace esa
          * @brief Returns a reference to the element at requested index.
          * 
          * @param index
-         * @return T& 
+         * @return Type& 
          */
-        [[nodiscard]] T & operator[](uint32_t index)
+        [[nodiscard]] Type & operator[](uint32_t i)
         {
-            assert(index < Size && "ECSA ERROR: array index out of range!");
-            return _data[index];
+            assert(i < Size && "ECSA ERROR: array index out of range!");
+            return _data[i];
         }
 
     };

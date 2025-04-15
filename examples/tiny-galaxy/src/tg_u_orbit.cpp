@@ -19,19 +19,22 @@ void tg::u_orbit::init()
 
 }
 
-void tg::u_orbit::update(entity e)
+void tg::u_orbit::update()
 {
-    // entity components
-    position & pos = table.get<position, tags::POSITION>(e);
-    orbit & orb    = table.get<orbit, tags::ORBIT>(e);
+    for (entity e : this->subscribed())
+    {
+        // entity components
+        position & pos = table.get<position, tags::POSITION>(e);
+        orbit & orb    = table.get<orbit, tags::ORBIT>(e);
 
-    // update angle
-    if (orb.angle < 360)
-        orb.angle += orb.v_angular;
-    else
-        orb.angle = 0;
+        // update angle
+        if (orb.angle < 360)
+            orb.angle += orb.v_angular;
+        else
+            orb.angle = 0;
 
-    // orbital motion: the rotation is relative to the parent's (x, y) position
-    pos.x = orb.distance * bn::degrees_cos(orb.angle);
-    pos.y = orb.distance * bn::degrees_sin(orb.angle);
+        // orbital motion: the rotation is relative to the parent's (x, y) position
+        pos.x = orb.distance * bn::degrees_cos(orb.angle);
+        pos.y = orb.distance * bn::degrees_sin(orb.angle);
+    }
 }

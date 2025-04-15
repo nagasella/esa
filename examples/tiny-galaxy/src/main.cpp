@@ -1,4 +1,5 @@
 #include "bn_core.h"
+#include "bn_keypad.h"
 
 #include "tg_definitions.h"
 #include "tg_entities.h"
@@ -9,13 +10,15 @@
 
 int main()
 {
+    bool paused = false;
+
     bn::core::init();
 
     // create an entity table
     tg::entity_table table;
 
     // define some of the table's columns in IWRAM (stack)
-    // this should give some performance advantage for the
+    // this gives some performance advantage for the
     // computation of the scene graph's absolute positions
     esa::series<tg::position, 128> positions;
     esa::series<tg::entity, 128> parents;
@@ -29,7 +32,7 @@ int main()
     // (this one is not used in performance-critical tasks)
     table.add_component<tg::orbit>(tg::tags::ORBIT);
     
-    // attach some updaters to the table
+    // attach the updaters to the table
     table.add_updater(new tg::u_orbit(table));
     table.add_updater(new tg::u_scenegraph(table));
     table.add_updater(new tg::u_background());
@@ -42,8 +45,24 @@ int main()
 
     while (true)
     {
+        // pause/unpause game
+        if (bn::keypad::start_pressed())
+        {
+            if (!paused)
+            {
+                table.deactivate_all_updaters();
+                paused = true;
+            }
+            else
+            {
+                table.activate_all_updaters();
+                paused = false;
+            }
+        }
+
         // Update all the updaters in the table
         table.update();
+
         bn::core::update();
     }
 

@@ -4,6 +4,12 @@
 #include "tg_definitions.h"
 #include "bn_random.h"
 
+
+/**
+ * @brief This namespace contains functions to generate
+ * entities of each type.
+ * 
+ */
 namespace tg::entities
 {
     void galaxy(entity_table & table, bn::fixed x, bn::fixed y);

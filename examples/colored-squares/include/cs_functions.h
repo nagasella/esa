@@ -3,6 +3,12 @@
 
 #include "cs_definitions.h"
 
+
+/**
+ * @brief This namespace contains functions used for
+ * query or apply.
+ * 
+ */
 namespace cs::functions
 {
     // queries

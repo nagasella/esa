@@ -8,7 +8,7 @@
 #include "bn_log.h"
 
 cs::u_entity_manager::u_entity_manager(entity_table& t) :
-    table_updater::table_updater(tags::ENTITY_MANAGER),
+    table_updater(tags::ENTITY_MANAGER),
     table(t)
 {
     
@@ -43,7 +43,7 @@ void cs::u_entity_manager::update()
     // delete all the rotating squares with angle > 180 degrees
     else if (bn::keypad::left_pressed())
     {
-        esa::vector<entity, 128> ids = table.query<tags::QRY_ROTATION, 128>();
+        esa::vector<entity, 96> ids = table.query<tags::QRY_ROTATION, 96>();
         for (entity e : ids)
         {
             table.get<sprite, tags::SPRITE>(e).reset(); // deallocate sprite resources

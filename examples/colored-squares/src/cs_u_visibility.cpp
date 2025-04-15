@@ -5,7 +5,7 @@
 
 
 cs::u_visibility::u_visibility(entity_table& t) :
-    entity_updater::entity_updater(tags::VISIBILITY),
+    entity_updater(tags::VISIBILITY),
     table(t)
 {
     
@@ -21,24 +21,27 @@ void cs::u_visibility::init()
 
 }
 
-void cs::u_visibility::update(entity e)
+void cs::u_visibility::update()
 {
-    sprite & spr   = table.get<sprite, tags::SPRITE>(e);
-    bool & visible = table.get<bool, tags::VISIBLE>(e);
-
-    if (bn::keypad::b_pressed())
+    for (entity e : this->subscribed())
     {
-        if (visible)
+        sprite & spr   = table.get<sprite, tags::SPRITE>(e);
+        bool & visible = table.get<bool, tags::VISIBLE>(e);
+
+        if (bn::keypad::b_pressed())
         {
-            spr.reset();
-            visible = false;
-        }
-        else
-        {
-            position & pos = table.get<position, tags::POSITION>(e);
-            spr = bn::sprite_items::squares.create_sprite(pos.x, pos.y);
-            spr.value().set_tiles(bn::sprite_items::squares.tiles_item(), 1);
-            visible = true;
+            if (visible)
+            {
+                spr.reset();
+                visible = false;
+            }
+            else
+            {
+                position & pos = table.get<position, tags::POSITION>(e);
+                spr = bn::sprite_items::squares.create_sprite(pos.x, pos.y);
+                spr.value().set_tiles(bn::sprite_items::squares.tiles_item(), 1);
+                visible = true;
+            }
         }
     }
 }

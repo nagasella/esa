@@ -6,9 +6,8 @@
 
 namespace esa
 {
-    
-    template<uint32_t Entities>
-    class cached_query
+
+    class icached_query
     {
         /**
          * @brief Unique tag.
@@ -17,23 +16,15 @@ namespace esa
         tag_t _tag;
 
 
-        /**
-         * @brief The IDs of the entities this query processes.
-         * 
-         */
-        vector<entity, Entities> _entities;
-
-
-        protected:
-
-        
         public:
+
 
         /**
          * @brief Constructor.
          * 
+         * @param tag The unique tag to assign to the query.
          */
-        cached_query(tag_t tag)
+        icached_query(tag_t tag)
         {
             _tag = tag;
         }
@@ -43,14 +34,14 @@ namespace esa
          * @brief Filter entities processed by this query based on their components.
          * 
          */
-        [[nodiscard]] virtual bool select(entity e)
+        virtual bool select(entity e)
         {
             return false;
         }
 
 
         /**
-         * @brief Initialization.
+         * @brief Initialize the query.
          * 
          */
         virtual void init()
@@ -63,12 +54,18 @@ namespace esa
          * @brief Find entities that satisfy a condtion.
          * 
          */
-        [[nodiscard]] virtual bool where(entity e)
+        virtual bool where(entity e)
         {
             return true;
         }
 
-        
+
+        virtual void subscribe(entity e) = 0;
+
+
+        virtual void unsubscribe(entity e) = 0;
+
+
         /**
          * @brief Returns the unique tag associated to the query.
          * 
@@ -81,10 +78,44 @@ namespace esa
 
 
         /**
-         * @brief Subscribe the entity to the cached query.
+         * @brief Virtual destructor.
          * 
          */
-        void subscribe(entity e)
+        virtual ~icached_query() = default;
+
+    };
+
+
+    
+    template<uint32_t Entities>
+    class cached_query : public icached_query
+    {
+        /**
+         * @brief The IDs of the entities subscribed to the query.
+         * 
+         */
+        vector<entity, Entities> _entities;
+
+
+        public:
+
+
+        /**
+         * @brief Constructor.
+         * 
+         * @param tag The unique tag to assign to the query.
+         */
+        cached_query(tag_t tag) : icached_query(tag)
+        {
+
+        }
+
+
+        /**
+         * @brief Subscribe an entity to the cached query.
+         * 
+         */
+        void subscribe(entity e) override
         {
             for (auto ent : _entities)
             {
@@ -97,10 +128,10 @@ namespace esa
 
 
         /**
-         * @brief Unsubscribe the entity from the cached query.
+         * @brief Unsubscribe an entity from the cached query.
          * 
          */
-        void unsubscribe(entity e)
+        void unsubscribe(entity e) override
         {
             for (uint32_t i = 0; i < _entities.size(); i++)
             {
@@ -114,11 +145,11 @@ namespace esa
 
 
         /**
-         * @brief Returns a vector with the IDs of the entities processed by this query.
+         * @brief Returns a vector with the IDs of the entities subscribed to the query.
          * 
          * @return vector<entity, Entities> 
          */
-        [[nodiscard]] vector<entity, Entities> entities()
+        [[nodiscard]] vector<entity, Entities> subscribed()
         {
             return _entities;
         }
@@ -129,7 +160,6 @@ namespace esa
          * 
          */
         virtual ~cached_query() = default;
-
     };
 
 }

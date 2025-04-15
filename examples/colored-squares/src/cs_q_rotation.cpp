@@ -1,7 +1,7 @@
 #include "cs_q_rotation.h"
 
 cs::q_rotation::q_rotation(entity_table& t) :
-    cached_query::cached_query(tags::QRY_ROTATION),
+    cached_query(tags::QRY_ROTATION),
     table(t)
 {
     

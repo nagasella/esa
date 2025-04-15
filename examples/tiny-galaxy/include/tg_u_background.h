@@ -5,8 +5,14 @@
 
 #include "bn_regular_bg_ptr.h"
 
+
 namespace tg
 {
+    /**
+     * @brief This updater only takes care of updating the 
+     * background.
+     * 
+     */
     class u_background : public table_updater
     {
         bn::regular_bg_ptr bg;

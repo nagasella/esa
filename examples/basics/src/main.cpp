@@ -57,41 +57,44 @@ class u_movement : public entity_updater
     }
 
     // update each entity processed by this updater
-    void update(entity e) override
+    void update() override
     {
-        // read the entity's components from the table
-        bn::sprite_ptr & spr = table.get<sprite, SPRITE>(e).value();
-        velocity & vel = table.get<velocity, VELOCITY>(e);
+        for (entity e : this->subscribed())
+        {
+            // read the entity's components from the table
+            bn::sprite_ptr & spr = table.get<sprite, SPRITE>(e).value();
+            velocity & vel = table.get<velocity, VELOCITY>(e);
 
-        // get the sprite position
-        bn::fixed x = spr.x();
-        bn::fixed y = spr.y();
+            // get the sprite position
+            bn::fixed x = spr.x();
+            bn::fixed y = spr.y();
 
-        // bounce off screen edges
-        if (x < -bn::display::width() / 2)
-        {
-            x = -bn::display::width() / 2;
-            vel.x *= -1;
-        }
-        else if (x > bn::display::width() / 2)
-        {
-            x = bn::display::width() / 2;
-            vel.x *= -1;
-        }
-        if (y < -bn::display::height() / 2)
-        {
-            y = -bn::display::height() / 2;
-            vel.y *= -1;
-        }
-        else if (y > bn::display::height() / 2)
-        {
-            y = bn::display::height() / 2;
-            vel.y *= -1;
-        }
+            // bounce off screen edges
+            if (x < -bn::display::width() / 2)
+            {
+                x = -bn::display::width() / 2;
+                vel.x *= -1;
+            }
+            else if (x > bn::display::width() / 2)
+            {
+                x = bn::display::width() / 2;
+                vel.x *= -1;
+            }
+            if (y < -bn::display::height() / 2)
+            {
+                y = -bn::display::height() / 2;
+                vel.y *= -1;
+            }
+            else if (y > bn::display::height() / 2)
+            {
+                y = bn::display::height() / 2;
+                vel.y *= -1;
+            }
 
-        // update the sprite position
-        spr.set_x(x + vel.x);
-        spr.set_y(y + vel.y);
+            // update the sprite position
+            spr.set_x(x + vel.x);
+            spr.set_y(y + vel.y);
+        }
     }
 
 };

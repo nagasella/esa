@@ -4,7 +4,6 @@
 #include "esa.h"
 #include <cassert>
 
-#include "bn_log.h"
 
 namespace esa
 {
@@ -27,13 +26,13 @@ namespace esa
          */
         entity_mask()
         {
-            for (uint32_t i = 0; i <= (Entities >> 5); i++)
+            for (uint32_t i = 0; i < ((Entities - 1) >> 5) + 1; i++)
                 _mask[i] = 0;
         }
 
 
         /**
-         * @brief Mark the entity as present in the mask.
+         * @brief Marks a certain entity as present.
          * 
          * @param e The ID of the entity.
          */
@@ -45,7 +44,7 @@ namespace esa
 
 
         /**
-         * @brief Mark the entity as absent from the mask.
+         * @brief Marks a certain entity as absent.
          * 
          * @param e The ID of the entity.
          */
@@ -57,7 +56,7 @@ namespace esa
 
 
         /**
-         * @brief Tell if the entity is present in the mask.
+         * @brief Tells if the entity is present in the mask.
          * 
          * @param e The ID of the entity.
          * @return true 

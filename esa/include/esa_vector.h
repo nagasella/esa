@@ -7,14 +7,14 @@
 
 namespace esa
 {
-    template<typename T, uint32_t MaxSize>
+    template<typename Type, uint32_t MaxSize>
     class vector
     {
         /**
          * @brief Actual array of data.
          * 
          */
-        T _data [ MaxSize ];
+        Type _data [ MaxSize ];
 
 
         /**
@@ -62,13 +62,13 @@ namespace esa
 
 
         /**
-         * @brief Add an element to the vector.
+         * @brief Add an element to the back of the vector.
          * 
          */
-        void push_back(const T value)
+        void push_back(const Type & value)
         {
             assert(!full() && "ESA ERROR: vector is full!");
-            _data[_size] = value;
+            ::new(static_cast<void*>(_data + _size)) Type(value);
             _size++;
         }
 
@@ -85,11 +85,11 @@ namespace esa
 
 
         /**
-         * @brief Get a reference to the last element in the vector.
+         * @brief Get a reference to the first element in the vector.
          * 
-         * @return T& 
+         * @return Type& 
          */
-        [[nodiscard]] T & front()
+        [[nodiscard]] Type & front()
         {
             assert(!empty() && "ESA ERROR: vector is empty!");
             return _data[0];
@@ -99,9 +99,9 @@ namespace esa
         /**
          * @brief Get a reference to the last element in the vector.
          * 
-         * @return T& 
+         * @return Type& 
          */
-        [[nodiscard]] T & back()
+        [[nodiscard]] Type & back()
         {
             assert(!empty() && "ESA ERROR: vector is empty!");
             return _data[_size - 1];
@@ -109,17 +109,17 @@ namespace esa
 
 
         /**
-         * @brief Insert an element at a certain position.
+         * @brief Insert an element at a certain position (index).
          * 
          * @param position The index to insert to.
          * @param value The value to insert.
          */
-        void insert(uint32_t index, const T value)
+        void insert(uint32_t i, const Type & value)
         {
             assert(!full() && "ESA ERROR: vector is full!");
-            for (uint32_t i = _size; i > index; i--)
-                _data[i] = _data[i - 1];
-            _data[index] = value;
+            for (uint32_t j = _size; j > i; j--)
+                _data[j] = _data[j - 1];
+            ::new(static_cast<void*>(_data + i)) Type(value);
             _size++;
         }
 
@@ -129,11 +129,12 @@ namespace esa
          * 
          * @param index The index of the element to erase.
          */
-        void erase(uint32_t index)
+        void erase(uint32_t i)
         {
             assert(!empty() && "ESA ERROR: index is larger than current vector size!");
-            for (uint32_t i = index; i < _size - 1; i++)
-                _data[i] = _data[i + 1];
+            for (uint32_t j = i; j < _size - 1; j++)
+                _data[j] = _data[j + 1];
+            _data[_size - 1].~Type();
             _size--;
         }
 
@@ -151,9 +152,9 @@ namespace esa
         /**
          * @brief Beginning of vector (iterator).
          * 
-         * @return T* 
+         * @return Type* 
          */
-        [[nodiscard]] T * begin()
+        [[nodiscard]] Type * begin()
         {
             return _data;
         }
@@ -162,16 +163,16 @@ namespace esa
         /**
          * @brief End of vector (iterator).
          * 
-         * @return T* 
+         * @return Type* 
          */
-        [[nodiscard]] T * end()
+        [[nodiscard]] Type * end()
         {
             return _data + _size;
         }
 
 
         /**
-         * @brief Tells the current vector size.
+         * @brief Tells the current siz e of the vector.
          * 
          * @return uint32_t 
          */
@@ -185,12 +186,12 @@ namespace esa
          * @brief Returns a reference to the element at a certain index.
          * 
          * @param index
-         * @return T& 
+         * @return Type& 
          */
-        [[nodiscard]] T & operator[](uint32_t index)
+        [[nodiscard]] Type & operator[](uint32_t i)
         {
-            assert(index < _size && "ESA ERROR: index out of range for esa::vector object!");
-            return _data[index];
+            assert(i < _size && "ESA ERROR: index out of range for esa::vector object!");
+            return _data[i];
         }
 
     };

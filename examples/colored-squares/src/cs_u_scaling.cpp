@@ -4,7 +4,7 @@
 
 
 cs::u_scaling::u_scaling(entity_table& t) :
-    entity_updater::entity_updater(tags::SCALING),
+    entity_updater(tags::SCALING),
     table(t)
 {
     
@@ -20,19 +20,23 @@ void cs::u_scaling::init()
 
 }
 
-void cs::u_scaling::update(entity e)
+void cs::u_scaling::update()
 {
-    sprite & spr = table.get<sprite, tags::SPRITE>(e);
-    int & scale = table.get<int, tags::SCALE>(e);
-
-    if (bn::keypad::a_pressed())
+    for (entity e : this->subscribed())
     {
-        if (scale < 3)
-            scale++;
-        else
-            scale = 1;
-    }
+        sprite & spr = table.get<sprite, tags::SPRITE>(e);
+        int & scale = table.get<int, tags::SCALE>(e);
 
-    if (spr.has_value())
-        spr.value().set_scale((bn::fixed) 1 / scale);
+        if (bn::keypad::a_pressed())
+        {
+            if (scale < 3)
+                scale++;
+            else
+                scale = 1;
+        }
+
+        if (spr.has_value())
+            spr.value().set_scale((bn::fixed) 1 / scale);
+    }
+        
 }

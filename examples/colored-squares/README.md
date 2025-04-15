@@ -9,3 +9,4 @@ Interactive demo showcasing ESA's features:
 * B: make blue squares on screen visible/invisible
 * R: freeze the position of all yellow square with -64 < x < 64
 * L: destroy the first blue square + all the red squares entity in the entity table
+* START: pause/unpause the game

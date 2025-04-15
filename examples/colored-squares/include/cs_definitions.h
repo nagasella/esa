@@ -6,15 +6,17 @@
 #include "bn_optional.h"
 #include "bn_sprite_ptr.h"
 
-
+/**
+ * @brief Here we have the definition of all
+ * ESA-related stuff used in the game: parameterization
+ * of tables, udpaters, tags, ...
+ * 
+ */
 namespace cs
 {
     // parametrization of an entity table and its updaters
     using entity         = esa::entity;
     using entity_table   = esa::entity_table<128, 8, 6, 1, 0>;
-    using entity_updater = esa::entity_updater<128>;
-    using table_updater  = esa::table_updater;
-    using cached_query   = esa::cached_query<128>;
     using uint_set       = esa::uintn_set;
 
     // components
@@ -43,7 +45,7 @@ namespace cs
             SCALE = 4, // int
             ANGLE = 5,
             VISIBLE = 6, // bool
-
+            
             ANIM_SET = 7, // uintn set for animation info
             ANIM_CURR = 0,
             ANIM_CURR_SZ = 2,

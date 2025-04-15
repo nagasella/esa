@@ -5,7 +5,12 @@
 
 namespace cs
 {
-    class u_scaling : public entity_updater
+    /**
+     * @brief This udpater takes care of handling the scale
+     * of the sprites of entities with the SCALE compoennt.
+     * 
+     */
+    class u_scaling : public esa::entity_updater<64>
     {
         entity_table & table;
         
@@ -14,7 +19,7 @@ namespace cs
         u_scaling(entity_table& t);
         bool select(entity e) override;
         void init() override;
-        void update(entity e) override;
+        void update() override;
     };
 }
 

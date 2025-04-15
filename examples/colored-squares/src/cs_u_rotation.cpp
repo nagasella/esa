@@ -1,7 +1,7 @@
 #include "cs_u_rotation.h"
 
 cs::u_rotation::u_rotation(entity_table& t) :
-    entity_updater::entity_updater(tags::ROTATION),
+    entity_updater(tags::ROTATION),
     table(t)
 {
     
@@ -17,15 +17,18 @@ void cs::u_rotation::init()
 
 }
 
-void cs::u_rotation::update(entity e)
+void cs::u_rotation::update()
 {
-    sprite & spr = table.get<sprite, tags::SPRITE>(e);
-    int & angle = table.get<int, tags::ANGLE>(e);
+    for (entity e : this->subscribed())
+    {
+        sprite & spr = table.get<sprite, tags::SPRITE>(e);
+        int & angle = table.get<int, tags::ANGLE>(e);
 
-    angle++;
-    if (angle == 360)
-        angle = 0;
-    
-    if (spr.has_value())
-        spr.value().set_rotation_angle(angle);
+        angle++;
+        if (angle == 360)
+            angle = 0;
+        
+        if (spr.has_value())
+            spr.value().set_rotation_angle(angle);
+    }
 }

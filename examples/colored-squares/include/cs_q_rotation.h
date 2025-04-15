@@ -5,7 +5,12 @@
 
 namespace cs
 {
-    class q_rotation : public cached_query
+    /**
+     * @brief This query retrieves the IDs of all entities 
+     * that have an ANGLE component, and that have a rotation > 180 degrees.
+     * 
+     */
+    class q_rotation : public esa::cached_query<96>
     {
         entity_table & table;
 

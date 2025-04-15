@@ -2,13 +2,14 @@
 #define ESA_SERIES_H
 
 #include "esa.h"
+#include "esa_iseries.h"
 #include <cassert>
 
 
 namespace esa
 {
-    template<uint32_t Entities>
-    class iseries
+    template<typename ComponentType, uint32_t Entities>
+    class series : public iseries
     {
         /**
          * @brief Entity mask.
@@ -17,67 +18,11 @@ namespace esa
         entity_mask<Entities> _emask;
 
 
-        protected:
-
-
-        /**
-         * @brief Mark an entity as owning this component.
-         * 
-         * @param e The ID of the entity.
-         */
-        void add(entity e)
-        {
-            _emask.add(e);
-        }
-
-
-        public:
-
-
-        /**
-         * @brief Mark an entity as not owning this component.
-         * 
-         * @param e The ID of the entity.
-         */
-        virtual void remove(entity e)
-        {
-            _emask.remove(e);
-        }
-
-
-        /**
-         * @brief Tells if the entity owns this component.
-         * 
-         * @param e The ID of the entity.
-         * @return true 
-         * @return false 
-         */
-        [[nodiscard]] bool has(entity e)
-        {
-            return _emask.contains(e);
-        }
-
-
-        /**
-         * @brief Virtual destructor.
-         * 
-         */
-        virtual ~iseries()
-        {
-
-        }
-
-    };
-
-
-    template<typename ComponentType, uint32_t Entities>
-    class series : public iseries<Entities>
-    {
         /**
          * @brief Array of components.
          * 
          */
-        ComponentType _array [ Entities ];
+        ComponentType _data [ Entities ];
 
 
         public:
@@ -89,10 +34,35 @@ namespace esa
          * @param e The ID of the entity.
          * @param c The component instance.
          */
-        void add(entity e, ComponentType c)
+        void add(entity e, const ComponentType & c)
         {
-            iseries<Entities>::add(e);
-            _array[e] = c;
+            _emask.add(e);
+            ::new(static_cast<void*>(_data + e)) ComponentType(c);
+        }
+
+
+        /**
+         * @brief Remove a component from an entity.
+         * 
+         * @param e The ID of the entity.
+         */
+        void remove(entity e) override
+        {
+            _emask.remove(e);
+            _data[e].~ComponentType();
+        }
+
+
+        /**
+         * @brief Tells if the entity owns this component.
+         * 
+         * @param e The ID of the entity.
+         * @return true 
+         * @return false 
+         */
+        [[odiscard]] bool has(entity e) override
+        {
+            return _emask.contains(e);
         }
         
 
@@ -105,7 +75,20 @@ namespace esa
         [[nodiscard]] ComponentType & get(entity e)
         {
             assert(this->has(e) && "ESA ERROR: entity does not own the requested component!");
-            return _array[e];
+            return _data[e];
+        }
+
+
+        /**
+         * @brief Returns a reference to the element at requested index.
+         * 
+         * @param index
+         * @return T& 
+         */
+        [[nodiscard]] ComponentType & operator[](uint32_t i)
+        {
+            assert(i < Entities && "ECSA ERROR: series index out of range!");
+            return _data[i];
         }
 
     };

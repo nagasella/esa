@@ -9,10 +9,10 @@ namespace esa
 {
     
     template<uint32_t Entities>
-    class entity_updater : public iupdater
+    class entity_updater : public isubscribable_updater
     {
         /**
-         * @brief The IDs of the entities this updater processes.
+         * @brief The IDs of the entities subscribed to the updater.
          * 
          */
         vector<entity, Entities> _entities;
@@ -25,7 +25,7 @@ namespace esa
          * @brief Constructor.
          * 
          */
-        entity_updater(tag_t tag) : iupdater::iupdater(tag, udpater_type::ENTITY_UPDATER)
+        entity_updater(tag_t tag) : isubscribable_updater(tag)
         {
 
         }
@@ -35,24 +35,17 @@ namespace esa
          * @brief Filter entities processed by this udpater based on their components.
          * 
          */
-        [[nodiscard]] virtual bool select(entity e)
+        virtual bool select(entity e)
         {
             return false;
         }
 
 
         /**
-         * @brief Update logic.
+         * @brief Subscribe an entity to the udpater.
          * 
          */
-        virtual void update(entity e) = 0;
-
-
-        /**
-         * @brief Subscribe an entity to this udpater.
-         * 
-         */
-        void subscribe(entity e)
+        void subscribe(entity e) override
         {
             for (auto ent : _entities)
             {
@@ -65,10 +58,10 @@ namespace esa
 
 
         /**
-         * @brief Unsubscribe an entity from this udpater.
+         * @brief Unsubscribe an entity from the udpater.
          * 
          */
-        void unsubscribe(entity e)
+        void unsubscribe(entity e) override
         {
             for (uint32_t i = 0; i < _entities.size(); i++)
             {
@@ -81,12 +74,18 @@ namespace esa
         }
 
 
+        void unsubscribe(entity e, bool destroy)
+        {
+            unsubscribe(e);
+        }
+
+
         /**
-         * @brief Returns a vector with the IDs of the entities processed by this updater.
+         * @brief Returns a vector with the IDs of the entities currently subscribed to the updater.
          * 
          * @return vector<entity, Entities> 
          */
-        [[nodiscard]] vector<entity, Entities> entities()
+        [[nodiscard]] vector<entity, Entities> subscribed()
         {
             return _entities;
         }

@@ -16,7 +16,7 @@ namespace esa
          * 
          * @param tag The tag to assign to the updater.
          */
-        table_updater(tag_t tag) : iupdater(tag, udpater_type::TABLE_UPDATER)
+        table_updater(tag_t tag) : iupdater(tag)
         {
 
         }

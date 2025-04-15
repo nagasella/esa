@@ -6,6 +6,13 @@
 #include "bn_optional.h"
 #include "bn_sprite_ptr.h"
 
+
+/**
+ * @brief Here we have the definition of all
+ * ESA-related stuff used in the game: parameterization
+ * of tables, udpaters, tags, ...
+ * 
+ */
 namespace tg
 {
 
@@ -13,7 +20,6 @@ namespace tg
     using entity_table = esa::entity_table<128, 4, 3, 0, 0>;
     using entity_updater = esa::entity_updater<128>;
     using table_updater = esa::table_updater;
-    using cached_apply = esa::cached_apply<128>;
 
     // components
     struct position

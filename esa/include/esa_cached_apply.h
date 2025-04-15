@@ -7,8 +7,7 @@
 namespace esa
 {
     
-    template<uint32_t Entities>
-    class cached_apply
+    class icached_apply
     {
         /**
          * @brief Unique tag.
@@ -17,20 +16,14 @@ namespace esa
         tag_t _tag;
 
 
-        /**
-         * @brief The IDs of the entities this apply processes.
-         * 
-         */
-        vector<entity, Entities> _entities;
-
-        
         public:
+
 
         /**
          * @brief Constructor.
          * 
          */
-        cached_apply(tag_t tag)
+        icached_apply(tag_t tag)
         {
             _tag = tag;
         }
@@ -40,7 +33,7 @@ namespace esa
          * @brief Filter entities processed by this apply based on their components.
          * 
          */
-        [[nodiscard]] virtual bool select(entity e)
+        virtual bool select(entity e)
         {
             return false;
         }
@@ -60,12 +53,18 @@ namespace esa
          * @brief Modify entities that satisfy a condtion.
          * 
          */
-        [[nodiscrard]] virtual bool apply(entity e)
+        virtual bool apply(entity e)
         {
             return true;
         }
 
-        
+
+        virtual void subscribe(entity e) = 0;
+
+
+        virtual void unsubscribe(entity e) = 0;
+
+
         /**
          * @brief Returns the unique tag associated to the apply.
          * 
@@ -78,10 +77,40 @@ namespace esa
 
 
         /**
-         * @brief Subscribe the entity to the cached apply object.
+         * @brief Virtual destructor.
          * 
          */
-        void subscribe(entity e)
+        virtual ~icached_apply() = default;
+        
+    };
+    
+    template<uint32_t Entities>
+    class cached_apply : public icached_apply
+    {
+        /**
+         * @brief The IDs of the entities subscribed to the apply.
+         * 
+         */
+        vector<entity, Entities> _entities;
+
+        
+        public:
+
+        /**
+         * @brief Constructor.
+         * 
+         */
+        cached_apply(tag_t tag) : icached_apply(tag)
+        {
+
+        }
+
+
+        /**
+         * @brief Subscribe an entity to the cached apply object.
+         * 
+         */
+        void subscribe(entity e) override
         {
             for (auto ent : _entities)
             {
@@ -94,10 +123,10 @@ namespace esa
 
 
         /**
-         * @brief Unsubscribe the entity from the cached apply object.
+         * @brief Unsubscribe an entity from the cached apply object.
          * 
          */
-        void unsubscribe(entity e)
+        void unsubscribe(entity e) override
         {
             for (uint32_t i = 0; i < _entities.size(); i++)
             {
@@ -111,11 +140,11 @@ namespace esa
 
 
         /**
-         * @brief Returns a vector with the IDs of the entities processed by this apply.
+         * @brief Returns a vector with the IDs of the entities subscribed to this apply.
          * 
          * @return vector<entity, Entities> 
          */
-        [[nodiscard]] vector<entity, Entities> entities()
+        [[nodiscard]] vector<entity, Entities> subscribed()
         {
             return _entities;
         }

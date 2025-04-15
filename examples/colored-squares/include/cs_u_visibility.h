@@ -5,7 +5,12 @@
 
 namespace cs
 {
-    class u_visibility : public entity_updater
+    /**
+     * @brief This updater takes care of toggling
+     * the visibility of entities with the VISIBLE component.
+     * 
+     */
+    class u_visibility : public esa::entity_updater<32>
     {
         entity_table & table;
 
@@ -14,7 +19,7 @@ namespace cs
         u_visibility(entity_table& t);
         bool select(entity e) override;
         void init() override;
-        void update(entity e) override;
+        void update() override;
     };
 }
 

@@ -10,17 +10,17 @@ namespace esa
     {
 
         /**
-         * @brief Unique tag.
+         * @brief Unique tag of the updater.
          * 
          */
         tag_t _tag;
 
 
         /**
-         * @brief The type of updater. (table updter ot entity updater)
+         * @brief Tells if the `update` function will be called by the table.
          * 
          */
-        udpater_type _type;
+        bool _active;
 
 
         public:
@@ -29,23 +29,12 @@ namespace esa
         /**
          * @brief Constructor.
          * 
-         * @param tag 
+         * @param tag The unique tag to assign to the updater.
          */
-        iupdater(tag_t tag, udpater_type type)
+        iupdater(tag_t tag)
         {
             _tag = tag;
-            _type = type;
-        }
-
-
-        /**
-         * @brief Tells the type of this updater. (entity updater or table updater)
-         * 
-         * @return udpater_type 
-         */
-        udpater_type type()
-        {
-            return _type;
+            _active = true;
         }
 
 
@@ -54,9 +43,44 @@ namespace esa
          * 
          * @return tag_t 
          */
-        tag_t tag()
+        [[nodiscard]] tag_t tag()
         {
             return _tag;
+        }
+
+
+        /**
+         * @brief Tells if the updater is currently active.
+         * If it is, it is processed by `entity_table::update()`.
+         * 
+         * @return true 
+         * @return false 
+         */
+        [[nodiscard]] bool active()
+        {
+            return _active;
+        }
+
+
+        /**
+         * @brief Activate this updater (it will be processed
+         * by `entity_table::update()`).
+         * 
+         */
+        void activate()
+        {
+            _active = true;
+        }
+
+
+        /**
+         * @brief Deactivate this updater (it will not be processed
+         * by `entity_table::update()`).
+         * 
+         */
+        void deactivate()
+        {
+            _active = false;
         }
 
 
@@ -66,7 +90,26 @@ namespace esa
          */
         virtual void init()
         {
+            
+        }
 
+
+        /**
+         * @brief Execute update logic.
+         * 
+         */
+        virtual void update() = 0;
+
+
+        /**
+         * @brief Tells if entities can be subscribed to this updater.
+         * 
+         * @return true 
+         * @return false 
+         */
+        virtual bool subscribable()
+        {
+            return false;
         }
 
 
@@ -76,6 +119,55 @@ namespace esa
          */
         virtual ~iupdater() = default;
 
+    };
+
+
+    class isubscribable_updater : public iupdater
+    {
+        public:
+        
+
+        /**
+         * @brief Constructor.
+         * 
+         * @param tag The unique tag for the updater.
+         */
+        isubscribable_updater(tag_t tag)
+            : iupdater(tag)
+        {
+        }
+
+
+        /**
+         * @brief Subscribe an entity to the updater.
+         * 
+         * @param e The ID of the entity.
+         */
+        virtual void subscribe(entity e) = 0;
+
+
+        /**
+         * @brief Unsubscribe an entity from an updater.
+         * 
+         * @param e The ID of the entity.
+         */
+        virtual void unsubscribe(entity e) = 0;
+
+
+        virtual void unsubscribe(entity e, bool destroy) = 0;
+
+
+        /**s
+         * @brief Tells if entities can be subscribed to this updater.
+         * 
+         */
+        bool subscribable() override
+        {
+            return true;
+        }
+
+
+        virtual ~isubscribable_updater() = default;
     };
 }
 

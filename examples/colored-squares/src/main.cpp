@@ -1,4 +1,5 @@
 #include "bn_core.h"
+#include "bn_keypad.h"
 
 #include "esa.h"
 
@@ -16,6 +17,8 @@ using namespace cs;
 
 int main()
 {
+    bool paused = false;
+
     bn::core::init();
 
     // define an entity table
@@ -51,7 +54,24 @@ int main()
 
     while (true)
     {
+        // pause/unpause game
+        if (bn::keypad::start_pressed())
+        {
+            if (!paused)
+            {
+                table.deactivate_all_updaters();
+                paused = true;
+            }
+            else
+            {
+                table.activate_all_updaters();
+                paused = false;
+            }
+        }
+
+        // update table
         table.update();
+        
         bn::core::update();
     }
 

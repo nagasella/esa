@@ -82,7 +82,7 @@ Let's start with a simple example about using ESA. Below you can see how to defi
 
 // define tags for the components
 #define POSITION 0
-#define VELOCITIY 1
+#define VELOCITY 1
 
 // define the components
 struct position 

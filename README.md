@@ -102,7 +102,7 @@ int main()
 
     // add components to the table
     table.add_component<position>(POSITION);
-    table.add_component<velocity>(POSITION);
+    table.add_component<velocity>(VELOCITY);
 
     // create 100 entities and give them components
     for (int i = 0; i < 100; i++)

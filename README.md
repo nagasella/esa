@@ -8,7 +8,7 @@ Below is a basic introduction to Entity Systems, as well as a comprehensive tuto
 
 - [An introduction to Entity Systems](#an-introduction-to-entity-systems)
 
-- [ESA's building blocks](#an-introduction-to-esa)
+- [An introduction to ESA](#an-introduction-to-esa)
 
 - [Using ESA in your project](#using-esa-in-your-project)
 

@@ -68,7 +68,7 @@ namespace esa
          * @return true 
          * @return false 
          */
-        [[odiscard]] bool has(entity e) override
+        [[nodiscard]] bool has(entity e) override
         {
             for (entity id : _entities)
             {

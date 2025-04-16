@@ -60,7 +60,7 @@ namespace esa
          * @return true 
          * @return false 
          */
-        [[odiscard]] bool has(entity e) override
+        [[nodiscard]] bool has(entity e) override
         {
             return _emask.contains(e);
         }

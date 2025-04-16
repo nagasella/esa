@@ -113,22 +113,19 @@ int main()
         table.subscribe(e);
     }
 
-    // for loop to update entities 
-    // not the standard way of wokring with ESA... just for this example
+    // udpate entities
     for (esa::entity e = 0; e < 100; e++)
     {
-        // retrieve components
         position & p = table.get<position, POSITION>(e);
         velocity & v = table.get<velocity, VELOCITY>(e);
 
-        // modify position accordin to velocity
         p.x += v.x;
         p.y += v.y;
     }
 }
 ```
 
-Each of the commented parts will be examplained in more detail in the next sections. Note that the update iteration shown above (using a for loop) is not the standard way of working with ESA. Instead, ESA uses [updaters](#updaters-and-performance), [queries](#queries) and [apply objects](#apply), which were not used above just to keep the example compact. The next sections will cover all of them.
+Each of the commented parts will be examplained in more detail in the next sections. Note that the update iteration shown above (using a for loop) is not the standard way of working with ESA. Instead, ESA uses [updaters](#updaters), [queries](#queries) and [apply objects](#apply), which were not used above just to keep the example compact. The next sections will cover all of them.
 
 ### Entity tables
 
@@ -140,7 +137,7 @@ In order to optimize memory consumption, ESA allows to parameterize entity table
 
 * `Updaters`: the maximum number of [updaters](#updaters)
 
-* `Queries`: the maximum number of [cached queries](#3-cached-queries)
+* `Queries`: the maximum number of [cached queries](#2-cached-queries)
 
 * `Applys`: the maximum number of [cached apply objects](#2-cached-apply-objects)
 
@@ -161,9 +158,7 @@ table.add_component<position>(POSITION);
 table.add_component<velocity>(VELOCITY);
 ```
 
-The template parameter is the type of the component, while the argument of the function is the [unique tag](#tags-and-updaters) of the component (which is also used to retrieve the component for each entity). Out of all the components available in an entity table, each entity will only own some of them: as a consequence, some of the array elements will remain _empty_ (which means some memory is being wasted there). There are different ways to address this: one is to use more than one entity table, and keep in the same table only entities that share most components; the other is to use [indexed components](#indexed-components-and-index-updaters) which are discussed in the advanced part of the tutorial (so for now don't worry about that). In general though, don't try to optimize everything from the beginning, stick to one table and regular components until you really hit some limitations.
-
-Components can be of any data type, both simple (`int`, `bool`, ...) or complex (`struct`, ... but they should always provide one constructor that does not take any arguments). More than one component with the same data type is allowed; however, each component needs to be identified by a unique integer index, called [tag](#tags-and-updaters). Such index should be between `0` and the maximum number of components allowed for the table (as explained in the [previous section](#entity-tables)). ESA also offers [a couple of custom components](#appendix-b-esa-helper-components) developed for memory efficiency. 
+The template parameter is the type of the component, while the argument of the function is the [unique tag](#tags-and-updaters) to assign to the component (which is also used to retrieve the component for each entity).  Components can be of any data type, both simple (`int`, `bool`, ...) or complex (`struct`, ... but they should always provide one constructor that does not take any arguments). More than one component with the same data type is allowed; however, each component needs to be identified by a unique integer index, called [tag](#tags-and-updaters). Such index should be between `0` and the maximum number of components allowed for the table (as explained in the [previous section](#entity-tables)). ESA also offers [a couple of custom components](#appendix-b-esa-helper-components) developed for memory efficiency. 
 
 ## Entity lifecycle
 
@@ -186,7 +181,7 @@ In the example above, we also have this instruction:
 table.subscribe(e);
 ```
 
-This _subscribes_ the entity to every relevant [entity updater](#entitiy-updaters), [cached query](#3-cached-queries) and [cached apply obejct](#2-cached-apply-objects).
+This _subscribes_ the entity to every relevant [entity updater](#entitiy-updaters), [cached query](#2-cached-queries) and [cached apply obejct](#2-cached-apply-objects).
 
 A reference to a component can be retrieved from an entity like this:
 
@@ -208,17 +203,17 @@ table.clear();
 
 ## Updaters
 
-Updaters are the core of ESA: they are used to work on entity tables and process their components. They implement the logic of the game. There are two main types of updaters: [table updaters](#table-updaters) and [entity udpaters](#entitiy-updaters). Each of them has at least an `init` function and an `update` function. They also must have a [unique tag](#tags-and-updaters) associated. The idea is that, when using ESA, we want to avoid using [for loops](#a-simple-example) in our main program to work on entities. Instead, we want to implement our logic inside updaters, then attach those updaters to our entity table and let ESA deal with the rest:
+Updaters are the core of ESA: they are objects that work on entity tables and process their components. They implement the logic of the game, each focusing on a very precise and limited aspect. There are two main types of updaters: [table updaters](#table-updaters) and [entity updaters](#entitiy-updaters), from which you can inherit to define the updaters of your game. A third type, called [index updater](#indexed-components-and-index-updaters) will be introduced in the advanced section of the tutorial. 
+
+Each of them has at least an `init` function (for generic initialization) and an `update` function. They also must have a [unique tag](#tags-and-updaters) associated. The idea is that we want to avoid using [for loops](#a-simple-example) in our main program to work on entities; instead, we want to implement our logic inside updaters, then attach those updaters to our entity table and let ESA deal with the rest:
 
 ```cpp
 entity_table<100, 2, 5, 0, 0> table;
 table.add_components<position>(POSITION);
 table.add_components<velocity>(VELOCITY);
 
-// add some udpaters
 table.add_udpater(new udpater1(table));
 table.add_udpater(new udpater2(table));
-// others...
 
 table.init(); // call "init" for every updater
 
@@ -230,12 +225,12 @@ while (1)
 }
 ```
 
-This keeps your main game loop clean and tidy - a true joy for the eye. Btw, it is important to ALWAYS allocate updaters with `new`! (Since ESA will `delete` them when the table is destroyed)
+This keeps your main game loop clean and tidy. Btw, it is important to ALWAYS allocate updaters with `new`! (Since ESA will `delete` them when the table is destroyed)
 
 Updaters can be deactivated and activated: when they are deactivated, their `update` function will not be called during `table.update()`. This is useful if you want to put on hold some functionality of your game (typical example: pause the game), and it can be done both for table updaters and entity updaters (discussed in the [next section](#entitiy-updaters)). You can define the initial state for an updater as you add it to the table:
 
 ```cpp
-table.add_updater(new updater(table), false); // false -> updater will be initially inactive
+table.add_updater(new updater(table), false); // updater will start inactive
 ```
 
 If you do not specify the boolean parameter, the default state of the udpater will be active. You can also deactivate the updater at any time during the game loop:
@@ -264,7 +259,7 @@ table.deactivate_all_updaters();
 
 ### Table updaters
 
-The simplest type of updater is the `esa::table_updater`: it does not work on any speicfc entity, but it can work freely on the whole table. To define a new a table updater, you need to create a class that inherits from `esa::table_updater`, and override the `init` and `update` member functions. Normally, you will also need to get a reference to the entity table for practical purposes, and pass a [unique tag to use for the updater](#tags-and-updaters) to the constructor of the base class. Here is a small example:
+The simplest type of updater is the `esa::table_updater`: it does not work on any specific entity, but it can work freely on the whole table. To define a new a table updater, you need to create a class that inherits from `esa::table_updater`, and override the `init` and `update` member functions. Normally, you will also need to get a reference to the entity table for practical purposes, and pass a [unique tag to use for the updater](#tags-and-updaters) to the constructor of the base class. Here is a small example:
 
 ```cpp
 #define TAG 0 // updater's tag
@@ -295,23 +290,11 @@ class updater : public esa::table_updater
 };
 ```
 
-You can do whatever you want in the `init` and `update` functions. For example, you can get the IDs of various entities through [queries](#queries), and then work on those entities (collision detection, ...). You can also do stuff that have nothing to do with ESA (handling the game's camera, handling background parallax effects, handling music playback, ... you name it).
+You can do whatever you want in the `init` and `update` functions. For example, you can get the IDs of various entities through [queries](#queries), and then work on those entities (collision detection, ...), or anything else really.
 
 ### Entitiy updaters
 
-Entity updaters work only on entities that own (_or not_) specific components. These entities are said to be _subscribed_ to the entity udpater. Each entity updater allows you to _unsubscribe_ entities: when an entity is unsubscribed the updater will not process it anymore, even if it satisfies the `select` function. An example where this can be useful is when an entity goes off screen, in order to save computational resources. You can unsubscirbe an entity from an updater through the entity table:
-
-```cpp
-table.unsubscribe_from_updater<UPDATER_TAG>(e);
-```
-
-Then, the entity can be subscribed again with:
-
-```cpp
-table.subscribe_to_updater<UPDATER_TAG>(e);
-```
-
-When you implement an entity updater, you have to inherit from `esa::entity_updater<Entities>`. The `Entities` parameter indicates how many entities _at most_ this updater will work on: it does _not_ need to match the `Entities` parameter of the [entity table](#entity-tables); actually, if you use a smaller number, this will be saving some memory. 
+Entity updaters work only on entities that own (_or not_) specific components. These entities are said to be _subscribed_ to the entity updater.  Entity updaters have to inherit from `esa::entity_updater<Entities>`. The `Entities` parameter indicates how many entities _at most_ this updater will work on: it does _not_ need to match the `Entities` parameter of the [entity table](#entity-tables); actually, if you use a smaller number, this will be saving some memory. 
 
 Then you will have to override the `select` member function: this function implements a _filter_ which decides which entities will be processed by the updater. An arbitrarily complex filter can be used, however remember that this function is only ran ONCE per entity (when the entity is added to the table).
 
@@ -322,19 +305,18 @@ Let's make a practical example and implement an update logic for the `position` 
 
 using entity_table = esa::entity_table<100, 2, 1, 0, 0>;
 
-class updater : public esa::entity_updater<100> // template parameter can be < 100...
+class updater : public esa::entity_updater<100> // can also be < 100...
 {
     entity_table & table;
 
     public:
 
-    // assign tag and get a reference to the table
     updater(entity_table & t) : 
         entity_updater(MOVEMENT),
         table(t)
     { }
 
-    // filter the entities to process
+    // filter the entities to process based on the components they own
     bool select(esa::entity e) override
     {
         return table.has<POSITION>(e) && table.has<VELOCITY>(e);
@@ -357,6 +339,20 @@ class updater : public esa::entity_updater<100> // template parameter can be < 1
 };
 ```
 
+You are allowed to delete entities (using `table.destroy(e)`) as you loop through them, since ESA does not delete entities immediately but records the IDs of the deleted entities and then deletes all of them at the end of a `table.update()` call (when all updaters have been prcessed for that frame).
+
+An entity updater allows you to _unsubscribe_ entities: when an entity is unsubscribed the updater will not process it anymore. You can unsubscribe an entity from an updater with:
+
+```cpp
+table.unsubscribe_from_updater<UPDATER_TAG>(e);
+```
+
+Then, the entity can be subscribed again with:
+
+```cpp
+table.subscribe_to_updater<UPDATER_TAG>(e);
+```
+
 ### Tags and updaters
 
 Tags are unique integer identifiers used for retrieving components, updaters, cached queries and cached apply objects. As a clarification, tags should be unique for each of those four ESA objects inividually, not _globally_: there will be a set of unique tags for components, a different set for updaters, another set for queries and another again for apply objects. Each of these sets will be numbered `0` to [the maximum defined for the table](#entity-tables). Updaters can be retrieved from anywhere else in the program through their tag:
@@ -369,23 +365,24 @@ Similarly also for cached queries and cached apply objects (exaplained in the ne
 
 ## Queries
 
-Updaters are nice, but they are not sufficient to cover all possible needs in developing a game. Soemtimes what we need is an easy way to obtain (at a specific moment in the program) the indexes of all the entities that satisfy a certain condition. We use queries for this. Queries can be performed on a table by using one of the overloads of its `query` member function. However, the query condition can be implemented in two ways: (1) through a function, or (2) through a dedicated _cached query_ object. Let's cover both cases.
+Updaters are nice, but using only those to work on a table can be limiting. For example, sometimes what we need is an easy way to obtain (at a specific moment in the program) the indexes of all the entities that satisfy a certain condition and then do something with those IDs (check collisions, ...). We use queries for this. Queries can be implemented in two ways:
+1. As a user-defined function
+2. As a _cached query_ object
 
 ### 1. Queries based on a user-defined function
 
-The first type of queries are queries based on a user-defined function. This needs to be a `bool` function, which will be applied per-entity: it should take as arguments the `entity_table` and a single `entity`, and return `true` if the entity satisfies the query criteria, otherwise `false`. Let's say we want to get all the entities on the right side of the screen, then the query function will look like this:
+The first type of query is one based on a user-defined function. This needs to be a `bool` function, which will be applied per-entity: it should take as arguments the `entity_table` and a single `entity`, and return `true` if the entity satisfies the query criteria, otherwise `false`. Let's say we want to get all the entities on the right side of the screen, then the query function will look like this:
 
 ```cpp
 bool find_entities_on_right_side(entity_table & table, entity e)
 {
-    // if the entity has no position component, leave it alone
     if (!table.has<POSITION>(e))
         return false;
         
-    // if it has a position, check if it is on the right side of the screen
     position & p = table.get<position, POSITION>(e);
     if (p.x > 0)
-        return true; // add the entity ID to the query result
+        return true;
+
     return false;
 }
 ```
@@ -396,19 +393,17 @@ Then, this function can be used to query a table, that is, to obtain the IDs of 
 esa::vector<entity, 100> ids = table.query<100>(&find_entities_on_right_side);
 ```
 
-The query returns an `esa::vector` of entity IDs. `esa::vector` is similar to `std::vector`, with some features missing and maximum capacity defined at compile time. The maximum capacity you define for the vector of the vector should be enough to fit all the entities that are _expected_ to be found by the query: since this is not necessarily known at compile time, you should be careful about this. 
+The query returns an `esa::vector` of entity IDs. `esa::vector` is similar to `std::vector`, with some features missing and maximum capacity defined at compile time. The maximum capacity you define for the vector of the vector should be enough to fit all the entities that are _expected_ to be found by the query: since this is not necessarily known at compile time, you should be careful about this.
 
-This type of query is very practical as all it requires is to define a function; however it can be inefficient, since the function is applied to all the entities in the table indiscriminately. In order to get the best performance you will usually want to use [cached queries](#3-cached-queries) instead.
+This type of query is very practical as all it requires is to define a function; however it can be inefficient, since the function is applied to all the entities in the table indiscriminately. In order to get the best performance you will usually want to use [cached queries](#2-cached-queries) instead.
 
-### 2. Dynamic queries based on a function
+Queries based on functions can be dynamic if the function takes also a third parameter (reference, of any type), which is used for filtering. In this case the filtering condition can change in time based on the parameter. You can check out the example `colored-squares` to see a practical example of this type of query.
 
-Queries based on functions can be dynamic if the function takes also a parameter (of any type), which is used for filtering. In this case the filtering condition can change in time based on the parameter (for example, instead of filtering based on a constant `x` position we can filter based on a changing `x` position). You can check out the example `colored-squares` to see a practical example of this type of query.
+### 2. Cached queries
 
-### 3. Cached queries
+Cached queries are queries that are defined as classes, and offer better performance because they filter the entities they will work on as they are added to the table. Their definition is similar to the definition of [entity updaters](#entitiy-updaters), but they need to inherit from `esa::cached_query<Entities>`. The parameter `Entities` represents the _expected maximum_ number of entities the query will retrieve: it does _not_ have to match the `Entities` parameter of the entity table. Actually, if it is smaller you will save some memory.
 
-Cached queries are queries that are defined as classes. Their definition is similar to the definition of [entity updaters](#entitiy-updaters), but they need to inherit from `esa::cached_query<Entities>`. The parameter `Entities` represents the _expected maximum_ number of entities the query will retrieve: it does _not_ have to match the `Entities` parameter of the entity table. Actually, if it is smaller you will save some memory.
-
-Compared to entity udpaters, we do not override an `update` function, but a `where` function (the naming is taken from classical SQL databases): this is a `bool` function that will filter based on each entity's components data, and must return `true` if the query condition is satisfied, otherwise `false`. A unique tag must be defined for each cached query, pretty much like for updaters (it is passed to the constructor of the base class).
+Compared to entity udpaters, we do not override an `update` function, but a `where` function (the naming is taken from classical SQL databases): this is a `bool` function that will filter based on each entity's components data, and must return `true` to signal that the query condition is satisfied, otherwise `false`. A unique tag must be defined for each cached query, pretty much like for updaters (it is passed to the constructor of the base class).
 
 Let's implement the same query that we implemented before as a cached query:
 
@@ -417,13 +412,12 @@ Let's implement the same query that we implemented before as a cached query:
 
 using entity_table = esa::entity_table<100, 2, 1, 1, 0>;
 
-class query : public  esa::cached_query<100> // template parameter can be < 100...
+class query : public  esa::cached_query<50> // we expect to find 50 entities max each time
 {
     entity_table & table;
 
     public:
 
-    // assign tag and get a reference to the table
     query(entity_table & t) : 
         cached_query(QRY_FIND_ON_RIGHT_SIDE),
         table(t)
@@ -432,18 +426,19 @@ class query : public  esa::cached_query<100> // template parameter can be < 100.
     // CACHED part of the query: executed ONLY when an entity is added to the table
     bool select(esa::entity e) override
     {
-        // the query will consider only entities that have a position!
         return table.has<POSITION>(e);
     }
 
     void init() override { }
 
-    // DUNAMIC part of the query: executed each time the query is called
+    // DYNAMIC part of the query: executed each time the query is called
     bool where(esa::entity e) override
     {
         position & p = table.get<position, POSITION>(e);
+
         if (p.x > 0)
             return true;
+
         return false;
     }
 };
@@ -464,34 +459,32 @@ table.add_query(new query(table));
 Then, it can (finally) be called inside the game like this:
 
 ```cpp
-esa::vector<entity, 100> ids = table.query<QRY_FIND_ON_RIGHT_SIDE, 100>(); 
+esa::vector<entity, 50> ids = table.query<QRY_FIND_ON_RIGHT_SIDE, 50>(); 
 ```
 
-As a better-performance alternative, you can define a `esa::vector` first and pass it to the function as a reference, then run the query without a `return`:
+As an alternative, you can define a `esa::vector` first and pass it to the function as a reference, then run the query without a `return`:
 
 ```cpp
-esa::vector<entity, 100> ids;
-table.query<QRY_FIND_ON_RIGHT_SIDE, 100>(ids); 
+esa::vector<entity, 50> ids;
+table.query<QRY_FIND_ON_RIGHT_SIDE, 50>(ids); 
 ```
 
-In the first version, the `query` function creates a vector internally, which then has to be copied back during the `return`; in this second version, there is no copy to be made. Clearly the impact of this will be more noticeable for queries that collect many IDs and that are repated frequently.
-
-Entities can be `unsubscribed` from queries:
+This saves the time to copy back the vector at the end of the execution of the query. Entities can be `unsubscribed` from queries (in this case the query will not be able to find them):
 
 ```cpp
 table.unsubscribe_from_query<QUERY_TAG>(e);
 ```
 
-In this case the query will not be able to find them. Then you can re-subscribe the entity by:
+Then you can re-subscribe the entity by:
 
 ```cpp
 table.subscribe_to_query<QUERY_TAG>(e);
 ```
 
-Btw, if you want a pointer to the query later on, you can get by using:
+If you want a pointer to the query later on, you can get by using:
 
 ```cpp
-query * q = (query *) table.get_query<QUERYQRY_FIND_ON_RIGHT_SIDE_TAG>();
+query * q = (query *) table.get_query<QRY_FIND_ON_RIGHT_SIDE>();
 ```
 
 ## Apply
@@ -500,7 +493,7 @@ Additionally to running queries, it is possible to `apply` a certain function to
 
 Just like for queries, there are two different types of `apply` implementations:
 1. Apply a user-defined function to a table
-2. Use a cached apply object that can be called at runtime
+2. Use a cached apply object
 
 ### 1. Apply based on a function
 
@@ -509,14 +502,13 @@ Let's define a function that teleports an entity from `x = -6` to `x = 6` for no
 ```cpp
 bool teleport_entity(entity_table& table, entity e)
 {
-    // check if the entity has a position component
     if (!table.has<POSITION>(e))
         return false;
 
-    // if so, teleport the entity if its position is x = -6
     position & p = table.get<position, POSITION>(e);
     if (p.x == -6)
         p.x = 6;
+
     return false;
 }
 ```
@@ -527,26 +519,25 @@ The function must return a `bool` value: if it returns `true`, the execution of 
 table.apply(&teleport_entity);
 ```
 
-You can also pass parameters to an applied functions for dynamic behavior, just like for queries (the exercise is left to the reader).
+You can also pass parameters to an applied functions for dynamic behavior, just like for queries.
 
 ### 2. Cached apply objects
 
-Cached apply objects allow for better performance comapred to apply operations based on functions. To implement a cached apply obejct you have to inherit from `esa::cached_apply<Entities>`. The aprameter `Entities` represents the _expected maximum_ number of entities the apply object will have to work on: it does _not_ have to match the number of entities in the entity table, since an apply can in principle work on less entities (a smaller number will save some memory). 
+Cached apply objects allow for better performance compared to apply operations based on functions, as they filter the entities they will work on as they are added to the table. To implement a cached apply obejct you have to inherit from `esa::cached_apply<Entities>`. The parameter `Entities` represents the _expected maximum_ number of entities the apply object will have to work on: it does _not_ have to match the number of entities in the entity table, since an apply can in principle work on less entities (a smaller number will save some memory). 
 
 Let's implement the same teleport function from above in a cached apply object (you should have gotten the idea of how this works by now):
 
 ```cpp
-#define APPLY_TELEPORT 0 // apply's tag
+#define APPLY_TELEPORT 0
 
 using entity_table = esa::entity_table<100, 2, 1, 1, 1>;
 
-class apply : public esa::cache_apply<100> // template parameter can be < 100...
+class apply : public esa::cache_apply<50> // we expect to work on 50 entities max
 {
     entity_table & table;
 
     public:
 
-    // assign tag and get a reference to the table
     updater(entity_table & t) : 
         cached_apply(APPLY_TELEPORT),
         table(t)
@@ -555,7 +546,6 @@ class apply : public esa::cache_apply<100> // template parameter can be < 100...
     // CACHED part of the apply: executed ONLY when an entity is added to the table
     bool select(eas::entity e) override
     {
-        // the apply will consider only entities that have a position!
         return table.has<POSITION>(e);
     }
 
@@ -582,7 +572,7 @@ And finally call it whenever you want to have all the entities with `x = -6` mag
 
 ```cpp
 if (condition)
-    table.apply<APPLY_TELEPORT, 100>(); // call the apply using its tag
+    table.apply<APPLY_TELEPORT, 50>(); // call the apply using its tag
 ```
 
 Entities can be `unsubscribed` from apply objects:
@@ -610,7 +600,7 @@ table.add_component<position>(POSITION);
 table.add_component<velocity>(VELOCITY);
 ```
 
-What is actually happening here is that an array of components of each data type is being allocated on the heap - which, for the GBA, means EWRAM. Although there's plenty of room in EWRAM (and therefore it is GOOD to allocate your components there), the access to this type of memory can often be slower compared to IWRAM access. For this reason, ESA allows to store components in IWRAM as well: in order to do this, you will need to define the array of components (in practice, an `esa::series` container) on the stack, and then pass a pointer to it to the entity table. Like this:
+What is actually happening here is that an array of components of each data type is being allocated on the heap - which, when compiling games with the GBA toolchain, means EWRAM. Although there's plenty of room in EWRAM (and therefore it is GOOD to allocate your components there), the access to this type of memory can often be slower compared to IWRAM access. For this reason, ESA allows to store components in IWRAM as well: in order to do this, you will need to define the array of components (in practice, an `esa::series` container) on the stack, and then pass a pointer to it to the entity table. Like this:
 
 ```cpp
 esa::series<position, 100> positions; // stack (IWRAM) allocated
@@ -624,7 +614,7 @@ The `esa::series` template parameters are (1) the data type of the component and
 
 ### Accessing components using the `[]` operator
 
-Up to now, in each `update` function we accessed the components using:
+Up to now, in each `update` function components were accessed using:
 
 ```cpp
 position & p = table.get<position, POSITION>(e);
@@ -633,20 +623,18 @@ position & p = table.get<position, POSITION>(e);
 This is nice and elegant, however it can be a bit inefficient. There can be some performance improvement by using _direct component indexing_ instead: we will need to get a reference to each component array (which is an `esa::series` object, as explained in the previous section) and access the components with the `[]` operator. Easier in code than by words:
 
 ```cpp
-#define MOVEMENT 0 // updater's tag
+#define MOVEMENT 0
 
 using entity_table = esa::entity_table<100, 2, 1, 0, 0>;
 
 class updater : public esa::entity_udpater<100>
 {
-    // reference to the indivdual component arrays (table's columns)
-    // 100 is the number of entities in the table
+    // reference to the indivdual component arrays
     esa::series<position, 100> & positions;
     esa::series<velocity, 100> & velocities;
 
     public:
 
-    // assign tag and get a reference to the 2 columns
     updater(entity_table & t) 
         : entity_updater(MOVEMENT),
         positions(t.get_series<position, POSITION>()),
@@ -681,9 +669,9 @@ The code is a bit more convoluted especially in the way the constructor is set u
 
 ### Indexed components and index updaters
 
-When you add a component to a table like explained previously, an array of compoennts is created. The size of this array of components is the same as the `Entities` parameter of the entity table: if your table can hold `50` entities, each column will have `50` elements; if your table can hold `500` entities, each column will have `500` elements. The index of each entity's component in the array is the entity ID itself.
+When you add a component to a table like explained previously, an array of compoennts is created. The size of this array of components is the same as the `Entities` parameter of the entity table: if your table can hold `50` entities, each array of components will have `50` elements; if your table can hold `500` entities, they will have `500` elements. The index of each component in a component array is the ID of the entity that owns it.
 
-However, some entities in the table _may not_ own the component: for example, if only `5` entities need the component, and the others don't, then you will end up with a lot of _wasted memory_. To help with this, from ESA 2.2.0 indexed components were introduced: when you use an indexed component, it is like having a column in the table that is _shorter_ than the other columns (and therefore uses less memory). The container that holds indexed components is the `esa::indexed_series` objects, which behave more like a vector rather than an array. The index of each component in the series is essentially unrelated to the entity ID: however, the series stores some information about the correspondence of each entity ID to the component index. 
+However, some entities in the table _may not_ own the component: for example, if only `5` entities need the component out of `100`, then you will end up with a lot of _wasted memory_. To help with this, from ESA 2.2.0 indexed components were introduced: when you use an indexed component, it is like having a column in the table that is _shorter_ than the other columns (and therefore uses less memory). The container that holds indexed components is the `esa::indexed_series` object, which behaves more like a vector rather than an array. The index of each component in the series is essentially unrelated to the entity ID: however, the series stores some information about the correspondence of each entity ID to each component index. 
 
 For example, let's say that we have an `animation` component like this:
 
@@ -702,7 +690,7 @@ We can add it to a table as an indexed component like this:
 table.add_component<animation, 5>(ANIMATION);
 ```
 
-This is not so much different comapred to adding a regular component, we only have a second template parameter that specifies the size of the underlying indexed series: essentially, `5` is the maximum number of entities _we expect_ will use this component; if we try to assign the `animation` component to a 6th entity, ESA will jsut throw an error.
+This is not so much different compared to adding a regular component, we only have a second template parameter that specifies the size of the underlying indexed series: essentially, `5` is the maximum number of entities _we expect_ will use this component; if we try to assign the `animation` component to a 6th entity, ESA will jsut throw an error.
 
 You can store indexed components in IWRAM similarly to [regular components](#storing-components-in-iwram), by creating an indexed series on the stack:
 
@@ -711,21 +699,19 @@ esa::indexed_series<animation, 5> animations;
 table.add_series(&animations, ANIMATION);
 ```
 
-Then, indexed components can be processed using a third type of updater called index updater. In index updaters, the update function works on an `esa::index`, which is the index of the indexed series. Here is an example of an index updater for the `animation` indexed component defined previously. Let's also suppose that we have a `sprite` component, that was added to the table as a regular component (not indexed), with its own `SPRITE` tag (implementation details do not really matter here):
+Then, indexed components can be processed using a third type of updater called index updater. In an index updaters, the `update` function works on an `esa::index` instead of an `esa::entity`, which is the index of the indexed series. Remember, this is unrelated to the entity ID, although there is a way to convert between the two. Below is an example of an index updater for the `animation` component defined previously. Let's also suppose that we have a `sprite` component, that was added to the table as a _regular_ component (not indexed), with its own `SPRITE` tag (they implementation details of this sprite component do not really matter here):
 
 ```cpp
-#define UPD_ANIMATION 0 // updater's tag
+#define UPD_ANIMATION 0
 
 using entity_table = esa::entity_table<100, 4, 1, 0, 0>;
 
-// defines an index updater that will work on an indexed series of size 5 (animation component)
 class updater : public esa::index_updater<animation, 5>
 {
     entity_table & table;
 
     public:
 
-    // pass a reference to the indexed series in the table through the parent's constructor
     updater(entity_table & t) : 
         index_updater(t.get_series<animation, 5, ANIMATION>(), UPD_ANIMATION),
         table(t)
@@ -733,10 +719,9 @@ class updater : public esa::index_updater<animation, 5>
 
     bool select(esa::entity e) override
     {
-        // will process only entities that have the animation component
-        // here, "series" is a memebr varaible already present
-        // in any index updater. We passed it in the constructor.
-        return series.has(e);
+        // "series" is a protected member variable of each index updater
+        // it is a reference to the indexed series the updater works on
+        return this->series.has(e);
     }
 
     void init() override { }
@@ -744,13 +729,10 @@ class updater : public esa::index_updater<animation, 5>
     void update() override
     {
         // loop on the indexes of the indexed series
-        // here, i is not an entity ID but the index of a component in the series
         for (esa::index i : this->subscribed())
         {
             // access the aniamtion component at this index
-            // we have no idea here which entity we are updating, since
-            // the index has nothing to do with the entity's ID
-            animation & anim = series[i];
+            animation & anim = this->series[i];
 
             // update the animation
             if (anim.timer > 0)
@@ -761,11 +743,13 @@ class updater : public esa::index_updater<animation, 5>
                     anim.curr++;
                 else
                     anim.curr = anim.first;
+                
+                anim.timer = anim.frame_duration;
 
-                // now we ask for the ID of the entity that owns this component
+                // find the entity ID corresponding to the index
                 esa::entity e = series.id(i);
 
-                // we can now use the entity ID to retrieve the sprite component from the table
+                // use the entity ID to retrieve other components
                 sprite & spr = table.get<sprite, SPRITE>(e);
                 // ...
                 // udpate sprite aniamtion frame...            
@@ -776,9 +760,9 @@ class updater : public esa::index_updater<animation, 5>
 };
 ```
 
-As you can see, the iteration in the `update` function is an iteration on indexes of the indexed series, instead of an iteration on entity IDs. Still, the `update` function is only iterating on components that belong to entities that are subscribed to the updater (the ones that satisfy the `select` clause). From the component's index it is always possible to obtain the ID of the entity that owns the component: like this, it is possible to access other components of this entity in the table, like the `sprite` component.
+This approach allows at the same time to iterate only on those few entities that possess the indexed component and to have very fast access to other components of those entities from the entity table. 
 
-The main weakeness of index updaters is related to when you add or remove entities: due to the extra time needed to map a component index to an entity ID, they can be a bit slow. However, when `updating` they are as efficient as any other updater. In general (and specifically if you have a lot of entities that need to be constantly created and destroyed) my suggestion would be to try to privilege regular components and entity updaters instead, and use indexed components and updaters only when the advantages in terms of memory impact are critical.
+The main weakeness of index updaters is related to when you add or remove entities to/from the table: due to the extra time needed to map an entity ID to the corresponding component index (which is slower than the opposite) they can be a bit slow. In general (and specifically if you have a lot of entities that need to be constantly created and destroyed) my suggestion would be to try to privilege regular components and entity updaters instead, and use indexed components and updaters only when the advantages in terms of memory impact are critical.
 
 ## Appendix A: boosting performance with ARM code
 
@@ -787,6 +771,8 @@ In GBA development, if you feel like you need some performance boost it is often
 In ESA, updaters generally implement small `update` functions that take care of very specialized tasks. This makes it easy to identify performance-critical parts of your program to compile as ARM code in IWRAM. For example, we can modify the example discussed in the section about entity updaters as follows (we will use the example with [direct component indexing](#accessing-components-using-the--operator). First, we have to define the `updater.h` header file like this:
 
 ```cpp
+#define MOVEMENT 0
+
 using entity_table = esa::entity_table<100, 2, 1, 0, 0>;
 
 class udpater : public esa::entity_updater<100>;
@@ -834,7 +820,7 @@ And finally we can implement the `update` function in a file named `udpater.iwra
 
 void updater::update()
 {
-    for (esa::entity e : this->entities())
+    for (esa::entity e : this->subscribed())
     {
         position & p = positions[e];
         velocity & v = velocities[e];

@@ -1,8 +1,9 @@
 #ifndef ESA_ISERIES_H
 #define ESA_ISERIES_H
 
-#include "esa.h"
 #include <cassert>
+
+#include "esa.h"
 
 
 namespace esa

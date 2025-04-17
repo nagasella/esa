@@ -1,8 +1,9 @@
 #ifndef ESA_ENTITY_TABLE_H
 #define ESA_ENTITY_TABLE_H
 
-#include "esa.h"
 #include <cassert>
+
+#include "esa.h"
 
 
 namespace esa
@@ -64,21 +65,21 @@ namespace esa
          * @brief Updaters.
          * 
          */
-        vector<iupdater *, (Updaters > 0 ? Updaters : 1)> * _updaters;
+        vector<iupdater *, Updaters> * _updaters;
 
 
         /**
          * @brief Cached queries.
          * 
          */
-        vector<icached_query *, (Queries > 0 ? Queries : 1)> * _queries;
+        vector<icached_query *, Queries> * _queries;
 
 
         /**
          * @brief Cached apply obejcts.
          * 
          */
-        vector<icached_apply *, (Applys > 0 ? Applys : 1)> * _applys;
+        vector<icached_apply *, Applys> * _applys;
 
 
         /**
@@ -116,9 +117,9 @@ namespace esa
             _size = 0;
             _pooled_ids = new vector<entity, Entities>();
             _components_location = new array<ram, Components>();
-            _updaters = new vector<iupdater *, (Updaters > 0 ? Updaters : 1)>();
-            _queries = new vector<icached_query *, (Queries > 0 ? Queries : 1)>();
-            _applys = new vector<icached_apply *, (Applys > 0 ? Applys : 1)>();
+            _updaters = new vector<iupdater *, Updaters>();
+            _queries = new vector<icached_query *, Queries>();
+            _applys = new vector<icached_apply *, Applys>();
         }
 
 

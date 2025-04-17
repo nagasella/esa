@@ -393,7 +393,14 @@ Then, this function can be used to query a table, that is, to obtain the IDs of 
 esa::vector<entity, 100> ids = table.query<100>(&find_entities_on_right_side);
 ```
 
-The query returns an `esa::vector` of entity IDs. `esa::vector` is similar to `std::vector`, with some features missing and maximum capacity defined at compile time. The maximum capacity you define for the vector of the vector should be enough to fit all the entities that are _expected_ to be found by the query: since this is not necessarily known at compile time, you should be careful about this.
+The query returns an `esa::vector` of entity IDs. `esa::vector` is similar to `std::vector`, with some features missing and maximum capacity defined at compile time. The maximum capacity you define for the vector of the vector should be enough to fit all the entities that are _expected_ to be found by the query: since this is not necessarily known at compile time, you should be careful about this. 
+
+You can also define the vector before and then pass a reference to it to the `query` fucntion, which saves the time to copy the vector back during `return`:
+
+```cpp
+esa::vector<entity, 100> ids;
+table.query<100>(&find_entities_on_right_side, ids);
+```
 
 This type of query is very practical as all it requires is to define a function; however it can be inefficient, since the function is applied to all the entities in the table indiscriminately. In order to get the best performance you will usually want to use [cached queries](#2-cached-queries) instead.
 
@@ -462,14 +469,14 @@ Then, it can (finally) be called inside the game like this:
 esa::vector<entity, 50> ids = table.query<QRY_FIND_ON_RIGHT_SIDE, 50>(); 
 ```
 
-As an alternative, you can define a `esa::vector` first and pass it to the function as a reference, then run the query without a `return`:
+Or, alternatively:
 
 ```cpp
 esa::vector<entity, 50> ids;
 table.query<QRY_FIND_ON_RIGHT_SIDE, 50>(ids); 
 ```
 
-This saves the time to copy back the vector at the end of the execution of the query. Entities can be `unsubscribed` from queries (in this case the query will not be able to find them):
+Entities can be `unsubscribed` from queries (in this case the query will not be able to find them):
 
 ```cpp
 table.unsubscribe_from_query<QUERY_TAG>(e);

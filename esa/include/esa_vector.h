@@ -1,8 +1,10 @@
 #ifndef ESA_VECTOR_H
 #define ESA_VECTOR_H
 
-#include "esa.h"
 #include <cassert>
+#include <new>
+
+#include "esa.h"
 
 
 namespace esa
@@ -14,7 +16,7 @@ namespace esa
          * @brief Actual array of data.
          * 
          */
-        Type _data [ MaxSize ];
+        Type _data [ MaxSize == 0 ? 1 : MaxSize ];
 
 
         /**

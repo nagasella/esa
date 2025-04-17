@@ -1,8 +1,9 @@
 #ifndef ESA_COMPONENTS_H
 #define ESA_COMPONENTS_H
 
-#include "esa.h"
 #include <cassert>
+
+#include "esa.h"
 
 
 namespace esa

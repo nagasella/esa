@@ -1,9 +1,11 @@
 #ifndef ESA_INDEXED_SERIES_H
 #define ESA_INDEXED_SERIES_H
 
+#include <cassert>
+#include <new>
+
 #include "esa.h"
 #include "esa_iseries.h"
-#include <cassert>
 
 
 namespace esa

@@ -1,8 +1,9 @@
 #ifndef ESA_ENTITY_MASK_H
 #define ESA_ENTITY_MASK_H
 
-#include "esa.h"
 #include <cassert>
+
+#include "esa.h"
 
 
 namespace esa

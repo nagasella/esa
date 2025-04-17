@@ -14,7 +14,7 @@ namespace esa
          * @brief Actual array of data.
          * 
          */
-        Type _data [ Size ];
+        Type _data [ Size == 0 ? 1 : Size ];
 
 
         public:
